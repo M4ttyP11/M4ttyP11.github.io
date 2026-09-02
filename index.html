@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Mathias Potter — Aerodynamics &amp; Motorsport Engineering</title>
+<meta name="description" content="Final-year MEng Aeronautical &amp; Astronautical Engineering student at the University of Southampton. Motorsport aerodynamics, CFD, and experimental measurement.">
+
+<!-- Open Graph: controls how the link looks when pasted into LinkedIn, Slack, WhatsApp.
+     Worth getting right — a recruiter often sees this card before the site. -->
+<meta property="og:title" content="Mathias Potter — Aerodynamics &amp; Motorsport Engineering">
+<meta property="og:description" content="Final-year MEng Aeronautical &amp; Astronautical Engineering. F1 lap-time simulation, CFD, and wind tunnel work.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://mathiaspotter.co.uk">
+<!-- TODO: add a 1200x630 preview image and uncomment
+<meta property="og:image" content="https://mathiaspotter.co.uk/assets/og-preview.jpg"> -->
+
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<!-- ============================= HERO ============================= -->
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Southampton, UK</p>
+    <h1>Mathias Potter</h1>
+    <p class="lede">
+      Final-year MEng Aeronautical &amp; Astronautical Engineering at the University of
+      Southampton, working towards a career in <strong>motorsport aerodynamics</strong>.
+      Wind tunnel and CFD work, experimental flow measurement, and simulation tools
+      I build because I want to know the answer.
+    </p>
+
+    <nav class="links" aria-label="Primary">
+      <a class="btn btn-primary" href="assets/Mathias_Potter_CV.pdf">Download CV</a>
+      <a class="btn" href="https://www.linkedin.com/in/mathias-potter">LinkedIn</a>
+      <a class="btn" href="https://github.com/M4ttyP11">GitHub</a>
+      <a class="btn" href="mailto:mathiaspotter0605@gmail.com">Email</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- ================= FEATURE: LAP TIME SIMULATOR ================== -->
+<section class="feature" aria-labelledby="sim-title">
+  <div class="wrap">
+    <p class="eyebrow">Selected work</p>
+    <h2 id="sim-title">F1 Lap-Time Simulator &amp; Setup Optimiser</h2>
+    <p class="subtitle">Self-directed · Python · Summer 2026</p>
+
+    <div class="feature-grid">
+      <div class="feature-text">
+        <p>
+          A quasi-steady-state lap-time simulator built in Python (NumPy, SciPy, FastF1),
+          correlated against real Formula 1 telemetry from the 2024 Italian Grand Prix
+          pole lap.
+        </p>
+        <p>
+          The first version matched lap time to within 1.25% &mdash; but that figure
+          flattered the model. Using RMS error across the full speed trace as the honest
+          measure instead, I added a load-sensitive tyre model and a Nelder&ndash;Mead
+          correlation fitter and brought the error down from
+          <strong>26.1 to 16.1&nbsp;km/h</strong>, a 38% reduction. I then established
+          four independent ways of showing the residual is a limit of the
+          quasi-steady-state model class rather than a data problem.
+        </p>
+        <p>
+          Wrapped in an optimiser, the model independently recovers the correct
+          real-world setup direction per circuit from track geometry alone: a trimmed
+          wing and long gears at Monza, a loaded wing at the Hungaroring.
+        </p>
+        <p class="note">
+          Published with an explicit limitations section. A correlation tool whose
+          failure modes you can&rsquo;t state is not one anybody should build decisions on.
+        </p>
+
+        <ul class="tags">
+          <li>Python</li><li>NumPy / SciPy</li><li>FastF1</li>
+          <li>Vehicle dynamics</li><li>Optimisation</li>
+        </ul>
+
+        <p class="actions">
+          <!-- TODO: point these at the real write-up and repo -->
+          <a class="btn btn-primary" href="assets/f1-lap-sim-writeup.pdf">Read the write-up</a>
+          <a class="btn" href="https://github.com/M4ttyP11">View the code</a>
+        </p>
+      </div>
+
+      <figure class="feature-figure">
+        <!-- TODO: drop the correlation plot in as assets/correlation-plot.png
+             This is the single most persuasive object on the whole site.
+             The onerror handler hides the whole figure if the file isn't there yet,
+             so the site never shows a broken-image icon while you're still gathering
+             assets. Delete the onerror once the image is in place if you prefer. -->
+        <img src="assets/correlation-plot.png"
+             alt="Simulated speed trace overlaid on real F1 telemetry for the 2024 Italian Grand Prix pole lap, showing close agreement through the full lap."
+             loading="lazy"
+             onerror="this.closest('figure').style.display='none'">
+        <figcaption>
+          Simulated speed trace against real telemetry &mdash; Monza, 2024 pole lap.
+          16.1&nbsp;km/h RMS across the full trace.
+        </figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ========================== PROJECTS ============================ -->
+<section class="projects" aria-labelledby="projects-title">
+  <div class="wrap">
+    <h2 id="projects-title">Projects</h2>
+
+    <div class="grid">
+
+      <article class="card">
+        <h3>MotoGP Cornering Aerodynamics</h3>
+        <p class="subtitle">Final-year Group Design Project · Project lead · 2026&ndash;27</p>
+        <p>
+          I co-created and proposed this project rather than taking one from the standard
+          list, secured approval, and recruited the six-person team I now lead.
+          It investigates aerodynamics at 45&ndash;60&deg; lean &mdash; the regime where a
+          motorcycle actually spends its lap time, and one largely absent from open
+          literature &mdash; using a 50%-scale wind tunnel model with rolling road, lean
+          and yaw capability.
+        </p>
+        <ul class="tags"><li>Wind tunnel</li><li>CFD</li><li>Project leadership</li></ul>
+      </article>
+
+      <article class="card">
+        <h3>Retroreflective PIV for Aerofoil Flow Measurement</h3>
+        <p class="subtitle">Third-year individual project · 2025&ndash;26</p>
+        <p>
+          Validated a retroreflective particle image velocimetry technique around a thick
+          aerofoil with a Gurney flap, across five angles of attack and five flow speeds.
+          Resolved coherent velocity fields including wake vorticity and boundary layer
+          behaviour, with reasonable agreement against conventional laser-sheet PIV.
+          Identified uncalibrated flow speed and near-wall resolution as the dominant
+          uncertainty sources.
+        </p>
+        <ul class="tags"><li>PIV</li><li>Experimental methods</li><li>Flow measurement</li></ul>
+      </article>
+
+      <article class="card">
+        <h3>Formula Student &mdash; Aerodynamics</h3>
+        <p class="subtitle">University of Southampton</p>
+        <p>
+          Worked across both the suspension and aerodynamics departments. In aerodynamics
+          I focused on front wing design and CFD testing in SolidWorks and Star-CCM+,
+          comparing concepts and quantifying performance changes to improve downforce,
+          mass and balance across the car.
+        </p>
+        <ul class="tags"><li>SolidWorks</li><li>Star-CCM+</li><li>Front wing</li></ul>
+      </article>
+
+      <article class="card">
+        <h3>Fixed-Wing UAV</h3>
+        <p class="subtitle">Second-year group project · Project manager · Awarded a first</p>
+        <p>
+          Overall project manager. Led the structural design of the wing from CAD through
+          FEA-supported decisions to manufacture of the wing and gimbal system, alongside
+          initial concept design. Successfully flight tested.
+        </p>
+        <ul class="tags"><li>CAD</li><li>FEA</li><li>Manufacture</li></ul>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<!-- ========================= EXPERIENCE =========================== -->
+<section class="experience" aria-labelledby="exp-title">
+  <div class="wrap">
+    <h2 id="exp-title">Experience</h2>
+
+    <ol class="timeline">
+      <li>
+        <p class="when">Aug &ndash; Sept 2026</p>
+        <h3>Software Engineer &mdash; Meraki Group</h3>
+        <p>
+          Delivered client-facing CRM systems and rebuilt the company&rsquo;s main internal
+          and external hub, shipping to production in a two-person team through a
+          GitHub branch-and-review workflow.
+          <!-- TODO: name the tech stack here once confirmed -->
+        </p>
+      </li>
+      <li>
+        <p class="when">Jun &ndash; Jul 2026</p>
+        <h3>Engineering Intern &mdash; Argo Engineering Solutions</h3>
+        <p>
+          Produced engineering drawings and CAD models for live marine structural
+          projects across composites, aluminium and high-strength steel, combined with
+          hands-on workshop experience.
+        </p>
+      </li>
+      <li>
+        <p class="when">Jun &ndash; Sept 2025</p>
+        <h3>Engineering Intern &mdash; Anemoi Marine Technologies</h3>
+        <p>
+          Supported aerodynamic and structural work on rotor sail systems for
+          wind-assisted ship propulsion. Built MATLAB tools to process experimental test
+          data and support installation and calibration, and analysed performance data
+          for both engineering and commercial teams.
+        </p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- =========================== CONTACT ============================ -->
+<section class="contact" aria-labelledby="contact-title">
+  <div class="wrap">
+    <h2 id="contact-title">Get in touch</h2>
+    <p class="lede">
+      I&rsquo;m looking for graduate roles in motorsport and high-performance
+      aerodynamics, starting summer 2027.
+    </p>
+    <p class="actions">
+      <a class="btn btn-primary" href="mailto:mathiaspotter0605@gmail.com">mathiaspotter0605@gmail.com</a>
+      <a class="btn" href="https://www.linkedin.com/in/mathias-potter">LinkedIn</a>
+    </p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>&copy; <span id="year">2026</span> Mathias Potter · Southampton, UK</p>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('year').textContent = new Date().getFullYear();
+</script>
+</body>
+</html>
