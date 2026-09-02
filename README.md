@@ -26,15 +26,42 @@ Live within a minute or two. There is no build step and nothing to configure per
 
 ## Adding content
 
-### Assets
-Drop files into `assets/`, then reference them as `assets/filename.png`. Expected filenames already referenced in the HTML:
+### Assets — exact filenames the HTML expects
 
-- `assets/correlation-plot.png` — simulator speed trace overlay
-- `assets/Mathias_Potter_CV.pdf`
-- `assets/f1-lap-sim-writeup.pdf`
-- `assets/og-preview.jpg` — 1200×630, optional, controls the LinkedIn/WhatsApp link preview
+**Names must match exactly**, including lowercase and hyphens. Anything missing hides itself rather than showing a broken icon, so it's safe to deploy before everything is gathered.
 
-Until an image exists the figure hides itself rather than showing a broken icon, so it's safe to deploy before everything is gathered.
+#### `assets/images/`
+
+| Filename | What | Shape |
+|---|---|---|
+| `mathias.jpg` | Portrait for the hero | **Portrait, ~3:4** (e.g. 900×1200) |
+| `correlation-plot.png` | Simulated vs real speed trace | Wide, ~16:9 |
+| `piv-velocity-field.png` | PIV velocity field / vorticity figure | Wide |
+| `gdp-model.png` | MotoGP wind tunnel model or CAD render | **16:10** (card image) |
+| `formula-student.jpg` | FS car or front wing | **16:10** |
+| `uav.jpg` | UAV, ideally in flight | **16:10** |
+| `og-preview.jpg` | Social link preview | **1200×630 exactly** |
+
+#### `assets/docs/`
+
+| Filename | What |
+|---|---|
+| `Mathias_Potter_CV.pdf` | Current CV |
+| `Individual_Project_Report.pdf` | Third-year individual project |
+| `F1_Lap_Sim_Writeup.pdf` | Lap-time simulator write-up |
+
+### ⚠️ Large PDFs
+
+GitHub warns above **50 MB** per file and hard-blocks at **100 MB**. If the individual project report is larger:
+
+1. **Compress it first** — most of the size is uncompressed figures. In Acrobat: *Save as Other → Reduced Size PDF*. Or use Ghostscript:
+   ```
+   gs -sDEVICE=pdfwrite -dPDFSETTINGS=/ebook -dNOPAUSE -dBATCH -sOutputFile=out.pdf in.pdf
+   ```
+   `/ebook` usually cuts a figure-heavy report by 80–90% with no visible loss on screen.
+2. If it's still over 50 MB, host it on Google Drive or OneDrive with a public link and point the button at that URL instead of a local file.
+
+Keep the repo well under 1 GB total.
 
 ### A new project card
 Copy this into the `<div class="grid">` block in the Projects section:

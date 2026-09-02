@@ -427,6 +427,121 @@ footer { border-top: 1px solid hsl(var(--border)); padding: 2rem 0; }
   font-size: .85rem; color: hsl(var(--muted-foreground));
 }
 
+/* --------------------------- RESEARCH PAPERS ---------------------------- */
+
+.paper {
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  background: hsl(var(--card));
+  padding: clamp(1.5rem, 4vw, 2.75rem);
+  box-shadow: var(--shadow);
+}
+.paper + .paper { margin-top: 2rem; }
+
+.paper-head { margin-bottom: 2rem; }
+.paper-title {
+  font-size: clamp(1.35rem, 2.6vw, 1.85rem);
+  margin: .9rem 0 .5rem;
+  max-width: 34ch;
+}
+.paper-meta {
+  font-family: var(--mono);
+  font-size: .82rem;
+  color: hsl(var(--muted-foreground));
+  margin: 0 !important;
+}
+
+.paper-grid {
+  display: grid;
+  grid-template-columns: 1.55fr 1fr;
+  gap: clamp(2rem, 4vw, 3.5rem);
+  align-items: start;
+}
+.paper-body p { color: hsl(var(--muted-foreground)); }
+.paper-body .big { color: hsl(var(--foreground)); }
+
+.paper-stats { display: grid; gap: 1rem; }
+
+@media (max-width: 900px) {
+  .paper-grid { grid-template-columns: 1fr; }
+  .paper-stats { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+}
+
+/* --------------------------- ABSTRACT TOGGLE ---------------------------- */
+
+.abstract {
+  margin: 1.75rem 0;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-sm);
+  background: hsl(var(--muted) / .6);
+  overflow: hidden;
+}
+.abstract summary {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem;
+  padding: .9rem 1.1rem;
+  cursor: pointer;
+  font-size: .875rem; font-weight: 500;
+  color: hsl(var(--foreground));
+  list-style: none;
+  transition: background .15s;
+}
+.abstract summary::-webkit-details-marker { display: none; }
+.abstract summary:hover { background: hsl(var(--muted)); }
+.abstract summary svg { transition: transform .25s ease; flex-shrink: 0; }
+.abstract[open] summary svg { transform: rotate(180deg); }
+.abstract[open] summary { border-bottom: 1px solid hsl(var(--border)); }
+
+.abstract-body { padding: 1.2rem 1.1rem; }
+.abstract-body p {
+  font-size: .9rem; line-height: 1.7;
+  color: hsl(var(--muted-foreground));
+  margin: 0;
+}
+.placeholder-note {
+  font-style: italic;
+  opacity: .7;
+}
+
+/* ------------------------------ CARD IMAGE ------------------------------ */
+
+.card-img {
+  width: calc(100% + 3.5rem);
+  margin: -1.75rem -1.75rem 1.5rem;
+  max-width: none;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+/* ------------------------------- EDUCATION ------------------------------ */
+
+.edu {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: clamp(2rem, 4vw, 3.5rem);
+  align-items: start;
+}
+.edu-main p { color: hsl(var(--muted-foreground)); }
+.edu-main strong { color: hsl(var(--accent)); font-weight: 600; }
+.edu-meta {
+  font-family: var(--mono);
+  font-size: .82rem;
+  margin: .35rem 0 1.2rem !important;
+}
+.edu-label {
+  font-size: .75rem; font-weight: 500;
+  text-transform: uppercase; letter-spacing: .14em;
+  color: hsl(var(--muted-foreground));
+  margin: 1.75rem 0 0 !important;
+}
+.edu-side { display: grid; gap: 1rem; }
+
+@media (max-width: 900px) {
+  .edu { grid-template-columns: 1fr; }
+  .edu-side { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+}
+
 /* ---------------------------- SCROLL REVEAL ----------------------------- */
 
 .reveal {
