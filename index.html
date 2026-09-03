@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>Mathias Potter — Aerodynamics &amp; Motorsport Engineering</title>
+<title>Mathias Potter | Aerodynamics &amp; Motorsport Engineering</title>
 <meta name="description" content="Final-year MEng Aeronautical &amp; Astronautical Engineering student at the University of Southampton, on track for a first. Motorsport aerodynamics, CFD, wind tunnel testing and simulation.">
 
-<meta property="og:title" content="Mathias Potter — Aerodynamics &amp; Motorsport Engineering">
+<meta property="og:title" content="Mathias Potter | Aerodynamics &amp; Motorsport Engineering">
 <meta property="og:description" content="Final-year MEng Aeronautical &amp; Astronautical Engineering. F1 lap-time simulation, CFD, and experimental aerodynamics.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://mathiaspotter.co.uk">
@@ -25,6 +25,16 @@
     var t = localStorage.getItem('theme');
     if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     document.documentElement.dataset.theme = t;
+
+    // The intro plays once per session so repeat navigation isn't gated by it.
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var force = /[?&]intro=1/.test(location.search);   // ?intro=1 replays it on demand
+    var seen;
+    try { seen = sessionStorage.getItem('introSeen'); } catch (e) { seen = null; }
+    if (!reduce && (force || !seen)) {
+      document.documentElement.dataset.loading = 'true';
+      try { sessionStorage.setItem('introSeen', '1'); } catch (e) {}
+    }
   })();
 </script>
 </head>
@@ -32,17 +42,32 @@
 <body>
 <a class="skip" href="#main">Skip to content</a>
 
+<!-- Brief intro curtain. Hidden unless the head script set data-loading, and
+     driven entirely by CSS timing so it lifts even if the script below fails. -->
+<div class="preload" aria-hidden="true">
+  <span class="preload-mark">MP</span>
+  <span class="preload-bar"><i></i></span>
+</div>
+
 <!-- ============================== NAV ============================== -->
 <nav class="nav" aria-label="Primary">
   <div class="nav-inner">
     <a class="nav-brand" href="#top">MP</a>
-    <div class="nav-links">
+    <div class="nav-links" id="navLinks">
       <a href="#education">Education</a>
       <a href="#major">Major projects</a>
       <a href="#projects">Other work</a>
       <a href="#experience">Placements</a>
       <a href="#contact">Contact</a>
     </div>
+    <button class="nav-toggle" id="navToggle" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">
+      <svg class="burger" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M3 6h18M3 12h18M3 18h18"/>
+      </svg>
+      <svg class="close" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M6 6l12 12M18 6L6 18"/>
+      </svg>
+    </button>
     <button class="theme-toggle" id="themeToggle" aria-label="Toggle colour theme">
       <svg class="sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
         <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
@@ -110,7 +135,7 @@
     <div class="hero-stats">
       <div>
         <span class="hs-num">1<span class="pct">st</span></span>
-        <span class="hs-label">On track — MEng Aeronautical &amp; Astronautical Engineering</span>
+        <span class="hs-label">On track in MEng Aeronautical &amp; Astronautical Engineering</span>
       </div>
       <div>
         <span class="hs-num">3</span>
@@ -141,7 +166,7 @@
           <span class="eyebrow">Education</span>
           <h2 class="edu-degree">MEng Aeronautical &amp;<br>Astronautical Engineering</h2>
           <p class="edu-uni">University of Southampton</p>
-          <p class="edu-meta">September 2023 — June 2027 (expected)</p>
+          <p class="edu-meta">September 2023 to June 2027 (expected)</p>
         </div>
         <div class="edu-badge">
           <span class="stat-num">1<span class="pct">st</span></span>
@@ -189,10 +214,10 @@
   <div class="container">
     <div class="section-head reveal">
       <span class="eyebrow">Major projects</span>
-      <h2>Three pieces of work<br>I'd want to be judged on</h2>
+      <h2>Three pieces of work I'd want to be judged on</h2>
       <p class="section-sub">
         Each documented in full, including an honest account of where the work stops
-        being valid — the part most write-ups leave out.
+        being valid, the part most write-ups leave out.
       </p>
     </div>
 
@@ -209,8 +234,8 @@
       <div class="paper-grid">
         <div class="paper-body">
           <p class="big">
-            An original research project into motorcycle aerodynamics at 45–60° lean —
-            the regime where a bike actually spends its lap time, and one largely absent
+            An original research project into motorcycle aerodynamics at 45–60° lean,
+            the regime where a bike actually spends its lap time and one largely absent
             from open literature.
           </p>
           <p>
@@ -252,113 +277,24 @@
       </div>
 
       <figure class="figure">
-        <img src="assets/images/gdp-model.png"
-             alt="50%-scale MotoGP wind tunnel model with rolling road, lean and yaw capability."
-             loading="lazy"
-             onerror="this.closest('figure').style.display='none'">
-        <figcaption>50%-scale wind tunnel model — rolling road, lean and yaw capability.</figcaption>
+        <div class="figure-grid">
+          <img src="assets/images/gdp-model.webp"
+               alt="50%-scale MotoGP wind tunnel model with rider, in the straight, upright condition."
+               loading="lazy"
+               onerror="this.style.display='none'">
+          <img src="assets/images/gdp-model-2.webp"
+               alt="50%-scale MotoGP wind tunnel model at lean angle."
+               loading="lazy"
+               onerror="this.style.display='none'">
+        </div>
+        <figcaption>
+          The 50%-scale model in both test conditions, straight and at lean, on a
+          rig with rolling road and yaw capability.
+        </figcaption>
       </figure>
     </article>
 
-    <!-- ---------------------- 2. F1 LAP SIM ------------------------ -->
-    <article class="paper reveal">
-      <div class="paper-head">
-        <div>
-          <span class="pill">Self-directed</span>
-          <h3 class="paper-title">F1 Lap-Time Simulator &amp; Setup Optimiser</h3>
-          <p class="paper-meta">Python · NumPy, SciPy, FastF1 · Summer 2026</p>
-        </div>
-      </div>
-
-      <div class="paper-grid">
-        <div class="paper-body">
-          <p class="big">
-            A quasi-steady-state lap-time simulator correlated against real Formula 1
-            telemetry from the 2024 Italian Grand Prix pole lap.
-          </p>
-          <p>
-            The first version matched lap time to within 1.25% — but that figure
-            flattered the model. Taking RMS error across the full speed trace as the
-            honest measure instead, I added a load-sensitive tyre model and a
-            Nelder–Mead correlation fitter and brought the error down from 26.1 to
-            16.1 km/h. I then established four independent ways of showing the residual
-            is a limit of the quasi-steady-state model class rather than a data problem.
-          </p>
-          <p>
-            Wrapped in an optimiser, the model independently recovers the correct
-            real-world setup direction per circuit from track geometry alone: a trimmed
-            wing and long gears at Monza, a loaded wing at the Hungaroring.
-          </p>
-
-          <details class="abstract">
-            <summary>
-              <span>Read the abstract</span>
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-            </summary>
-            <div class="abstract-body">
-              <!-- TODO: replace with your own abstract -->
-              <p>
-                This project develops and validates a quasi-steady-state lap-time
-                simulator for Formula 1, implemented in Python and correlated against
-                publicly available timing and telemetry data. A point-mass vehicle model
-                with a load-sensitive tyre formulation is solved over a discretised
-                racing line, with aerodynamic forces derived from a calibrated drag-lift
-                polar. Model parameters are fitted using a Nelder–Mead optimiser against
-                the 2024 Italian Grand Prix pole lap, reducing RMS speed-trace error from
-                26.1 to 16.1 km/h. The residual error is shown, through four independent
-                tests, to arise from the quasi-steady-state assumption itself rather than
-                from data quality or parameter choice. The validated model is then applied
-                as a setup optimiser, recovering the correct real-world aerodynamic and
-                gearing configuration for two circuits of opposing character from track
-                geometry alone.
-              </p>
-            </div>
-          </details>
-
-          <div class="tags">
-            <span>Python</span><span>NumPy / SciPy</span><span>FastF1</span>
-            <span>Vehicle dynamics</span><span>Optimisation</span>
-          </div>
-
-          <div class="hero-actions">
-            <a class="btn btn-primary" href="assets/docs/F1_Lap_Sim_Writeup.pdf" target="_blank" rel="noopener">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
-              Read the write-up
-            </a>
-            <a class="btn" href="assets/docs/F1_Lap_Sim_Writeup.pdf" download>Download PDF</a>
-            <a class="btn" href="https://github.com/M4ttyP11">View the code</a>
-          </div>
-        </div>
-
-        <aside class="paper-stats">
-          <div class="stat">
-            <span class="stat-num">16.1</span>
-            <span class="stat-unit">km/h RMS</span>
-            <span class="stat-label">Full speed-trace correlation error, down from 26.1</span>
-          </div>
-          <div class="stat">
-            <span class="stat-num">38<span class="pct">%</span></span>
-            <span class="stat-unit">error reduction</span>
-            <span class="stat-label">After a load-sensitive tyre model and Nelder–Mead fitting</span>
-          </div>
-          <div class="stat">
-            <span class="stat-num">2<span class="pct">/2</span></span>
-            <span class="stat-unit">circuits matched</span>
-            <span class="stat-label">Setup philosophy recovered at Monza and the Hungaroring</span>
-          </div>
-        </aside>
-      </div>
-
-      <figure class="figure">
-        <img src="assets/images/correlation-plot.png"
-             alt="Simulated speed trace overlaid on real F1 telemetry for the 2024 Italian Grand Prix pole lap."
-             loading="lazy"
-             onerror="this.closest('figure').style.display='none'">
-        <figcaption>Simulated speed trace against real telemetry — Monza, 2024 pole lap.</figcaption>
-      </figure>
-    </article>
-
-    <!-- ------------------- 3. INDIVIDUAL PROJECT ------------------- -->
+    <!-- ------------------- 2. INDIVIDUAL PROJECT ------------------- -->
     <article class="paper reveal">
       <div class="paper-head">
         <div>
@@ -389,9 +325,28 @@
               <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
             </summary>
             <div class="abstract-body">
-              <!-- TODO: paste the abstract from your submitted report, verbatim -->
-              <p class="placeholder-note">
-                Paste the abstract from your submitted report here, verbatim.
+              <p>
+                This work aimed to validate a retroreflective particle image
+                velocimetry (PIV) approach for capturing full-field flow around a
+                thick aerofoil with a Gurney flap. In a closed-loop water tunnel, a
+                high-resolution camera (JAI GO-2400C-USB) imaged tracer particles
+                against a retroreflective background material. Across a range of five
+                angles of attack and five tunnel speeds, coherent velocity fields were
+                resolved, mainly the behaviour of flow over the aerofoil, enhanced
+                vorticity near the flap, and wake patterns. The main wake trends showed
+                reasonable agreement with a conventional PIV comparison and with
+                relevant literature data. Importantly, the retroreflective lighting
+                enabled full body visualisation with no shadowing, which is difficult
+                with traditional laser-sheet PIV. However, quantitative accuracy was
+                limited by uncalibrated flow speed (pump Hz). The major uncertainties
+                are in the global velocity scale and near-wall resolution. In summary,
+                the study demonstrates that retroreflective PIV can capture the main
+                flow behaviour around the aerofoil and provide useful derived
+                quantities, although these remain more suitable for qualitative and
+                semi-quantitative interpretation in the present implementation. Future
+                work should focus on improving calibration, optimising seeding and
+                illumination to improve quantitative accuracy and enable viewing and
+                analysis on a wider range of components.
               </p>
             </div>
           </details>
@@ -402,11 +357,11 @@
           </div>
 
           <div class="hero-actions">
-            <a class="btn btn-primary" href="assets/docs/Individual_Project_Report.pdf" target="_blank" rel="noopener">
+            <a class="btn btn-primary" href="assets/docs/Individual_Project_Poster.pdf" target="_blank" rel="noopener">
               <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
-              Read the full report
+              View the poster
             </a>
-            <a class="btn" href="assets/docs/Individual_Project_Report.pdf" download>Download PDF</a>
+            <a class="btn" href="assets/docs/Individual_Project_Poster.pdf" download>Download poster</a>
           </div>
         </div>
 
@@ -421,15 +376,110 @@
             <span class="stat-unit">methods compared</span>
             <span class="stat-label">Retroreflective PIV validated against laser-sheet PIV</span>
           </div>
+          <div class="stat">
+            <span class="stat-num">1<span class="pct">st</span></span>
+            <span class="stat-unit">class awarded</span>
+            <span class="stat-label">First-class mark for the individual research project</span>
+          </div>
         </aside>
       </div>
 
       <figure class="figure">
-        <img src="assets/images/piv-velocity-field.png"
+        <img src="assets/images/piv-velocity-field.webp"
              alt="Velocity field around a thick aerofoil with a Gurney flap, resolved using retroreflective PIV."
              loading="lazy"
              onerror="this.closest('figure').style.display='none'">
         <figcaption>Resolved velocity field showing wake behaviour and vorticity near the Gurney flap.</figcaption>
+      </figure>
+    </article>
+
+    <!-- ---------------------- 3. F1 LAP SIM ------------------------ -->
+    <article class="paper reveal">
+      <div class="paper-head">
+        <div>
+          <span class="pill">Self-directed</span>
+          <h3 class="paper-title">F1 Lap-Time Simulator &amp; Setup Optimiser</h3>
+          <p class="paper-meta">Python · NumPy, SciPy, FastF1 · Summer 2026</p>
+        </div>
+      </div>
+
+      <div class="paper-grid">
+        <div class="paper-body">
+          <p class="big">
+            A quasi-steady-state lap-time simulator correlated against real Formula 1
+            telemetry from the 2024 Italian Grand Prix pole lap.
+          </p>
+          <p>
+            The first version matched lap time to within 1.25%, but that figure
+            flattered the model. Taking RMS error across the full speed trace as the
+            honest measure instead, I added a load-sensitive tyre model and a
+            Nelder–Mead correlation fitter and brought the error down from 26.1 to
+            16.1 km/h. I then established four independent ways of showing the residual
+            is a limit of the quasi-steady-state model class rather than a data problem.
+          </p>
+          <p>
+            Wrapped in an optimiser, the model independently recovers the correct
+            real-world setup direction per circuit from track geometry alone: a trimmed
+            wing and long gears at Monza, a loaded wing at the Hungaroring.
+          </p>
+
+          <details class="abstract">
+            <summary>
+              <span>Read the abstract</span>
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+            </summary>
+            <div class="abstract-body">
+              <p>
+                I built a quasi-steady-state (QSS) lap-time simulator in Python and
+                validated it against real Formula 1 telemetry, matching lap time to
+                within 1.25%, though RMS error across the full speed trace, at
+                16.1 km/h, is the honest measure. I then combined it with an optimiser
+                which, given only a circuit's geometry, independently chooses the right
+                aerodynamic setup for that track. Monza and the Hungaroring were
+                optimised for comparison.
+              </p>
+            </div>
+          </details>
+
+          <div class="tags">
+            <span>Python</span><span>NumPy / SciPy</span><span>FastF1</span>
+            <span>Vehicle dynamics</span><span>Optimisation</span>
+          </div>
+
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="assets/docs/F1_Lap_Sim_Writeup.pdf" target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+              Read the write-up
+            </a>
+            <a class="btn" href="assets/docs/F1_Lap_Sim_Writeup.pdf" download>Download PDF</a>
+          </div>
+        </div>
+
+        <aside class="paper-stats">
+          <div class="stat">
+            <span class="stat-num">16.1</span>
+            <span class="stat-unit">km/h RMS</span>
+            <span class="stat-label">Full speed-trace correlation error, down from 26.1</span>
+          </div>
+          <div class="stat">
+            <span class="stat-num">38<span class="pct">%</span></span>
+            <span class="stat-unit">error reduction</span>
+            <span class="stat-label">After a load-sensitive tyre model and Nelder–Mead fitting</span>
+          </div>
+          <div class="stat">
+            <span class="stat-num">2<span class="pct">/2</span></span>
+            <span class="stat-unit">circuits matched</span>
+            <span class="stat-label">Setup philosophy recovered at Monza and the Hungaroring</span>
+          </div>
+        </aside>
+      </div>
+
+      <figure class="figure">
+        <img src="assets/images/correlation-plot.webp"
+             alt="Simulated speed trace overlaid on real F1 telemetry for the 2024 Italian Grand Prix pole lap."
+             loading="lazy"
+             onerror="this.closest('figure').style.display='none'">
+        <figcaption>Simulated speed trace against real telemetry at Monza, 2024 pole lap.</figcaption>
       </figure>
     </article>
 
@@ -441,7 +491,7 @@
   <div class="container">
     <div class="section-head reveal">
       <span class="eyebrow">Other work</span>
-      <h2>Design, manufacture<br>and team projects</h2>
+      <h2>Design, manufacture and team projects</h2>
     </div>
 
     <div class="cards">
@@ -503,7 +553,7 @@
   <div class="container">
     <div class="section-head reveal">
       <span class="eyebrow">Placements</span>
-      <h2>Three placements,<br>three industries</h2>
+      <h2>Three placements, three industries</h2>
       <p class="section-sub">
         Aerodynamic test data, structural design and manufacture, and shipping
         production software.
@@ -516,40 +566,14 @@
 
       <article class="placement reveal">
         <div class="placement-side">
-          <span class="placement-when">Jun — Sept 2025</span>
-          <span class="placement-len">3 months</span>
-        </div>
-        <div class="placement-main">
-          <div class="placement-top">
-            <div>
-              <h3>Anemoi Marine Technologies</h3>
-              <p class="placement-role">Engineering Intern — Aerodynamics &amp; Structures</p>
-            </div>
-            <span class="pill">Aerodynamics</span>
-          </div>
-          <p>
-            Supported aerodynamic and structural projects on rotor sail systems —
-            wind-assisted ship propulsion using the Magnus effect.
-          </p>
-          <ul class="placement-list">
-            <li>Developed MATLAB tools to process experimental test data and support rotor sail installation and calibration</li>
-            <li>Analysed performance data and translated the results into conclusions used by both engineering and commercial teams</li>
-            <li>Produced CAD models, drawings and technical documentation across multidisciplinary projects</li>
-          </ul>
-          <div class="tags"><span>MATLAB</span><span>Test data</span><span>Aerodynamics</span><span>CAD</span></div>
-        </div>
-      </article>
-
-      <article class="placement reveal">
-        <div class="placement-side">
-          <span class="placement-when">Jun — Jul 2026</span>
+          <span class="placement-when">Jun to Jul 2026</span>
           <span class="placement-len">5 weeks</span>
         </div>
         <div class="placement-main">
           <div class="placement-top">
             <div>
               <h3>Argo Engineering Solutions</h3>
-              <p class="placement-role">Engineering Intern — Marine Structures</p>
+              <p class="placement-role">Engineering Intern, Marine Structures</p>
             </div>
             <span class="pill">Structures</span>
           </div>
@@ -565,6 +589,32 @@
         </div>
       </article>
 
+      <article class="placement reveal">
+        <div class="placement-side">
+          <span class="placement-when">Jun to Sept 2025</span>
+          <span class="placement-len">3 months</span>
+        </div>
+        <div class="placement-main">
+          <div class="placement-top">
+            <div>
+              <h3>Anemoi Marine Technologies</h3>
+              <p class="placement-role">Engineering Intern, Aerodynamics &amp; Structures</p>
+            </div>
+            <span class="pill">Aerodynamics</span>
+          </div>
+          <p>
+            Supported aerodynamic and structural projects on rotor sail systems:
+            wind-assisted ship propulsion using the Magnus effect.
+          </p>
+          <ul class="placement-list">
+            <li>Developed MATLAB tools to process experimental test data and support rotor sail installation and calibration</li>
+            <li>Analysed performance data and translated the results into conclusions used by both engineering and commercial teams</li>
+            <li>Produced CAD models, drawings and technical documentation across multidisciplinary projects</li>
+          </ul>
+          <div class="tags"><span>MATLAB</span><span>Test data</span><span>Aerodynamics</span><span>CAD</span></div>
+        </div>
+      </article>
+
     </div>
 
     <p class="group-label reveal">Software</p>
@@ -573,7 +623,7 @@
 
       <article class="placement reveal">
         <div class="placement-side">
-          <span class="placement-when">Aug — Sept 2026</span>
+          <span class="placement-when">Aug to Sept 2026</span>
           <span class="placement-len">4 weeks</span>
         </div>
         <div class="placement-main">
@@ -590,7 +640,7 @@
           </p>
           <ul class="placement-list">
             <li>Delivered multiple client-facing CRM systems, from requirement through to working product</li>
-            <li>Rebuilt the company's main internal and external hub — an existing system in active use, requiring changes without disrupting live functionality</li>
+            <li>Rebuilt the company's main internal and external hub, an existing system in active use that required changes without disrupting live functionality</li>
             <li>Shipped through a GitHub branch-and-review workflow, with review and verification on everything released</li>
           </ul>
           <div class="tags"><span>Git / GitHub</span><span>Production delivery</span></div>
@@ -605,7 +655,7 @@
 <section id="contact" class="section section-alt">
   <div class="container contact reveal">
     <span class="eyebrow">Contact</span>
-    <h2>Looking for graduate roles<br>in motorsport aerodynamics</h2>
+    <h2>Looking for graduate roles in motorsport aerodynamics</h2>
     <p class="section-sub">Graduating June 2027 · Available from summer 2027</p>
     <div class="hero-actions">
       <a class="btn btn-primary" href="mailto:mathiaspotter0605@gmail.com">mathiaspotter0605@gmail.com</a>
@@ -634,6 +684,37 @@
     localStorage.setItem('theme', next);
   });
 
+  var nav = document.querySelector('.nav');
+  var navToggle = document.getElementById('navToggle');
+  var navLinks = document.getElementById('navLinks');
+
+  function setNav(open) {
+    nav.dataset.open = open ? 'true' : 'false';
+    navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  setNav(false);
+
+  navToggle.addEventListener('click', function () {
+    setNav(nav.dataset.open !== 'true');
+  });
+
+  // Anchor links jump within the same page, so the panel has to close itself.
+  navLinks.addEventListener('click', function (e) {
+    if (e.target.closest('a')) setNav(false);
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && nav.dataset.open === 'true') {
+      setNav(false);
+      navToggle.focus();
+    }
+  });
+
+  // Leaving the mobile breakpoint with the panel open would strand the state.
+  window.matchMedia('(min-width: 721px)').addEventListener('change', function (e) {
+    if (e.matches) setNav(false);
+  });
+
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var items = document.querySelectorAll('.reveal');
 
@@ -648,10 +729,16 @@
     items.forEach(function (el) { io.observe(el); });
   }
 
-  var nav = document.querySelector('.nav');
   window.addEventListener('scroll', function () {
     nav.classList.toggle('scrolled', window.scrollY > 24);
   }, { passive: true });
+
+  // Removes the curtain from the layout once every intro animation has settled.
+  if (document.documentElement.dataset.loading === 'true') {
+    setTimeout(function () {
+      delete document.documentElement.dataset.loading;
+    }, 2200);
+  }
 </script>
 </body>
 </html>
