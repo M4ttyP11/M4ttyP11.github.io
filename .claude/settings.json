@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "d=\"${CLAUDE_PROJECT_DIR:-.}\"; f=\"$d/.claude/WORKLOG.md\"; if [ -f \"$f\" ]; then echo '<worktree-work-log>'; echo 'Persistent record of prior Claude work in this worktree (survives /clear and /compact). Read it before acting, and append to it as described in CLAUDE.md.'; echo; cat \"$f\"; echo '</worktree-work-log>'; fi",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
