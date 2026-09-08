@@ -275,3 +275,26 @@ step, GitHub Pages via CNAME). Branch: `M4ttyP11/Wesbite-improvements`.
   Self-proposed · 2026–27". Trimming the meta to "Final-year · Self-proposed ·
   2026–27" would clear it, but that is a copy call for Matty.
 - Status: not committed.
+
+## 2026-09-08, domain reputation and crawler files
+
+A contact tried to open mathiaspotter.co.uk inside a company network and
+WatchGuard blocked it as a newly registered / uncategorised domain. The NRD
+part is purely time-based (roughly 30 days from registration) and cannot be
+fixed from the repo. The uncategorised part can, so added the signals
+categorisation engines and crawlers look for:
+
+- `robots.txt`, `sitemap.xml` (home plus the six project pages)
+- `favicon.svg`, `favicon.ico`, `apple-touch-icon.png`: navy MP mark generated
+  with PIL from the `--accent` value hsl(214 90% 36%) = #0951ae
+- `.well-known/security.txt`, contact is the address already public on the page
+- `rel="canonical"`, icon links and `theme-color` in every head, plus the
+  `og:url` that the project pages were missing
+
+Committed as `07ce3ed`.
+
+Still open, and off-repo: submit the domain for recategorisation to WatchGuard,
+Broadcom Site Review, Cisco Talos, FortiGuard, Palo Alto and Trellix, and
+register the site with Google Search Console and Bing Webmaster Tools. Also
+still open from before: the og:preview image is TODO in `index.html`, so the
+og:image tag remains commented out.
