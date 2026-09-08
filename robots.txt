@@ -1,0 +1,7 @@
+# https://mathiaspotter.co.uk
+# Personal portfolio site. Everything here is public, crawl all of it.
+
+User-agent: *
+Allow: /
+
+Sitemap: https://mathiaspotter.co.uk/sitemap.xml

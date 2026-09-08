@@ -1,0 +1,7 @@
+# Personal portfolio site for Mathias Potter. Static HTML on GitHub Pages,
+# no accounts, no forms, no user data collected.
+
+Contact: mailto:mathiaspotter0605@gmail.com
+Expires: 2027-09-08T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://mathiaspotter.co.uk/.well-known/security.txt
