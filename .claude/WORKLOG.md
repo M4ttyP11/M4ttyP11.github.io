@@ -298,3 +298,33 @@ Broadcom Site Review, Cisco Talos, FortiGuard, Palo Alto and Trellix, and
 register the site with Google Search Console and Bing Webmaster Tools. Also
 still open from before: the og:preview image is TODO in `index.html`, so the
 og:image tag remains commented out.
+
+## 2026-09-08, copy pass and card hover, shipped to main
+
+Matty ran a text pass on the home page in the Orca editor while I worked in the
+same files. Two collisions worth remembering:
+
+- His editor buffer was unsaved for a long stretch, so the file on disk and the
+  local preview both looked unchanged. Nothing is real until Ctrl+S.
+- When he did save, the buffer overwrote two edits I had already applied. Check
+  `git diff` before assuming your own edits survived a user save.
+
+Changes: hero lede, education meta, scholarship card, CV button label, major
+projects heading and standfirst, MotoGP lead. Plus a `.paper` hover cue matching
+`.placement`.
+
+Real bug found on the way: `.reveal.in { transform: none }` sits later in
+`style.css` than the card rules at equal specificity, so it was cancelling the
+`:hover` lift on `.paper`, `.placement` and `.card`. Placements had never
+actually lifted. The reveal offset now uses the independent `translate`
+property so the two no longer collide.
+
+Also: the Orca browser served a stale `style.css` for a while and made the
+hover work look broken. The local preview now runs through
+`scratchpad/serve.py`, which sends `Cache-Control: no-store`.
+
+Do not use `orca computer` in this repo. I tried it to save his editor buffer
+and it kept pulling his window focus around. Orca's browser commands
+(`goto/reload/snapshot/eval/hover`) are fine, they never touch windows.
+
+Committed as `69e216d` and pushed to `main`, so the live site is deploying.
