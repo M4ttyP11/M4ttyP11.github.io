@@ -683,3 +683,159 @@ is stale at `27c0791` and was left alone, since it is another worktree.
 Open: step 5, the out laps on project pages, and step 6, continuity across
 navigation. Matty also wants a detail and colour pass on the strip later:
 different track shapes, colour, small icons.
+
+## 2026-09-12, step 5: out laps on project pages
+
+The strip is now a component, and project pages get a generated track.
+
+- `site.js`: the circuit IIFE is split into `initCircuit(root)` plus a builder.
+  The component finds its parts by class inside the root rather than by id, so
+  the hand-drawn strip in `index.html` and a generated one are the same thing
+  to it. `root.dataset.mode` decides closed lap or open out lap: distances
+  wrap on a lap and clamp on an out lap, the dash gap is the rest of the loop
+  on one and twice the length on the other, nothing resets at the end, and
+  past the last corner the chip reads "Finish" and scrolls to the foot of the
+  page.
+- `index.html`: `data-mode="lap"` on the aside and a `circuit-world` class on
+  the group. Nothing else changed.
+- On a project page there is no `#circuit`, so one is built from the `<h2>`s:
+  ids assigned where missing, a corner per heading, the whole strip appended
+  to the body. Seeded from `document.title`, so a page always draws the same
+  track.
+- `style.css`: `--accent` retinted on `[data-mode="outlap"]` only, amber in
+  both themes (206,101,9 on white, 250,155,46 on black), so an out lap never
+  reads as the circuit you left.
+
+Track generation, after three tries. A random walk on the heading spirals;
+forbid the spiral and it slaloms. What works is a walk along one axis that
+wanders across it: it cannot cross itself, it holds a frame the strip can
+show, and it gives long sweeps, real corners and the odd kink. Legs are
+scaled to about 54 units each rather than the track to a fixed length, so
+corners are the same size on a two-heading page and a six-heading one, and
+any corner tighter than 11 units of radius is opened out.
+
+The mapping needed rewriting for short pages. Most project pages cannot put
+any heading at the top of the viewport, so every anchor collapsed onto the
+same value and the whole track ran in the first few pixels of scroll. Now a
+corner that cannot reach the top, or that would leave less than 3% of the
+scroll each for the corners behind it and the run home, gives up its anchor,
+and runs of those are spread evenly over the scroll left to them. Measured on
+all six project pages and the home page: corners land between 0.25 and 0.91
+of the scroll, nothing bunched.
+
+Verified in Orca's browser on all six project pages plus `index.html`. Car on
+each corner within 0.34 track units at that corner's anchor, car exactly on
+the flag at the foot of the page, chip naming the next heading throughout and
+"Finish" past the last corner, chip and dot clicks landing their targets,
+travel direction 88.6 to 91.1 degrees against a wanted 90, so the car still
+points up the screen. Home page unchanged: same six corners, same anchors,
+and the garage freeze still holds the transform, dims to 0.3 and restores.
+
+`orca screenshot` crashed the runtime again, as last session. Worked around it
+by drawing the path into a canvas in the page and reading the data URL out, so
+the shapes were seen rather than guessed.
+
+Open: not committed. Step 6, continuity across navigation, is the last one,
+and the detail and colour pass Matty wants is still to come.
+
+## 2026-09-12, project dialog removed, projects are real pages again
+
+- Project links on the index used to be intercepted by site.js, which fetched
+  the page and injected it into a `<dialog class="modal">` over the home page.
+  That view was a boxed window, had no URL of its own, and showed no circuit
+  strip: project pages generate their own out-lap strip from their `<h2>`s, and
+  the dialog never carried it.
+- Removed the whole mechanism rather than making the dialog full bleed, since a
+  full-screen dialog is a page without a URL. Deleted from `site.js` the dialog
+  block (fetch, cache, rebase, history push/pop, prev/next in place) and the
+  "in the garage" freeze that watched `body.modal-open`, including the `frozen`
+  and `pendingMeasure` state. Deleted the `<dialog>` markup from `index.html`
+  and the PROJECT DIALOG CSS block plus the `body.modal-open` circuit dimming
+  from `style.css`. `grep -rn modal` is now clean across all three.
+- Verified in the Orca browser against a local no-store server: index has no
+  dialog, clicking a project link navigates to `/projects/...`, and that page
+  builds its own strip (`data-ready="true"`, label "Pit exit").
+- Open: nothing from this change. Project pages still have `.proj-back` and
+  their own next/previous links, which is now the only way back.
+
+## 2026-09-12, re-check after a reported crash, plus a line-ending fix
+
+- Matty reported the MotoGP page crashing when opened from the index. Could not
+  reproduce: served the worktree locally with `Cache-Control: no-store` and, in
+  the Orca browser, clicked through all six project links from the index. Every
+  one navigates, sets `data-ready="true"` on its generated strip, and scrolls
+  through the out lap with the label and next chip updating. Direct loads of all
+  six are clean too. Best guess is a cached mix of the old `site.js` and the new
+  `index.html` in the embedded browser.
+- Fixed a real defect introduced yesterday: the Python rewrite that stripped the
+  `frozen` / `pendingMeasure` state rewrote `site.js` with CRLF line endings,
+  which showed as a whole-file diff. Normalised back to LF, so `git diff` for
+  `site.js` is the real change again.
+
+## 2026-09-12, cartoon car and track furniture on the circuit strip
+
+The strip was a blob on a grey ribbon. It now reads as a track with a car on it.
+
+- `index.html` / `site.js`: the car is a top-down cartoon F1 in twelve elements,
+  wings, four tyres, chassis, airbox and helmet, drawn nose along +x and scaled
+  1.8 in the `rotate(-90)` group. Drawn to scale against a 12m road it was a
+  speck at 114px of strip, so it is deliberately oversized. Same markup in the
+  hand-written strip and in the out-lap generator.
+- `site.js`: new `furnish()` in `initCircuit` reads track furniture off the path
+  at build instead of anyone having to author it. The path is walked at 1.2
+  units and the turn per unit at each sample gives the local radius and which
+  side the inside is on. Tighter than R40 is a corner and takes a red and white
+  kerb down the inside, three passes over one polyline: grey edge, white, red
+  dashes. Tighter than R18 also takes a tyre barrier round the outside, spaced
+  1.25 apart and held off each end of the corner so the lap is not fenced. A
+  checkered line replaces the plain `<line class="circuit-sf">`, which is gone
+  from both the markup and the generator along with its CSS.
+- Because it is generated, a project page out lap gets the same furniture with
+  no extra code. Home page: 9 corners, 94 tyres. A typical out lap: 6 and 95.
+- `site.js` `render()`: each corner fades with the road it sits beside, using
+  the same lit window as the road layers. Only corners that change state are
+  touched, so a frame usually writes nothing.
+- `style.css`: `--tyre` is a near-black that lifts rather than inverts in dark,
+  so a tyre never reads as white. The car wears `--accent`, which means it turns
+  orange with the rest of an out lap. Its trail is the accent too, so the body
+  and wings carry a background-coloured cut-out line or the car disappears into
+  the road it has just driven. The kerb's grey edge is what keeps the white half
+  visible where it hangs off the road on a light page.
+- Checked in both themes, on the home page and on a project page. No console
+  output. Not committed.
+
+## 2026-09-12, start/finish moved to mid-straight, starting grid, wider road
+
+- `index.html`: the home circuit's seam is now the middle of the bottom
+  straight, not its start. The path opens at `M 108.25 150`, runs the lap, and
+  comes back with `L 108.25 150 Z`. The start/finish dot moved to match. That
+  is what puts the line mid-straight, since the checkered line is drawn at the
+  seam and crossing it is what completes a lap.
+- `site.js`: `startLine()` now also lays eight staggered grid boxes behind the
+  line on a closed lap, each half a stagger further back and on the other side.
+  An out lap starts at a pit exit, so it gets none. The line and its grid are
+  registered with the same fade as a corner, so they dim with the road under
+  them.
+- The boxes were first written as children of the line's own translate/rotate,
+  which applied their track coordinates twice and put them off the map. The
+  line now sits in an inner group and the boxes are siblings of it.
+- Road widened 4.2 to 5.2 units. A grid box has to be about a car wide and two
+  have to sit side by side, and the car was already taking two thirds of a 4.2
+  road. Checked first that the circuit has room: the closest the centreline
+  comes to another part of itself is 23.6 units, against the 7 or so a 5.2 road
+  and its kerbs need. Kerb and tyre sizes went up in proportion.
+- Checked on the home page in both themes and on a project page. No console
+  output. Not committed.
+
+## 2026-09-12, grid boxes redrawn as brackets
+
+- A grid box is not a closed rectangle. It is painted as the front of one: a
+  line across the slot with a short arm trailing back off each end, so the
+  open side faces the way the car goes. `.circuit-box` is now a path rather
+  than a rect, `BOX_L` became `BOX_ARM`.
+- First pass had the arms pointing forward, which is the bracket the other way
+  round. Flipped to negative x.
+- Sizes: slot 2.3 wide at 1.25 off the centreline, so two sit inside a 5.2
+  road with margin. The car came down from 1.8 to 1.65 scale to fit its box,
+  which also applies to out laps since there is one car.
+- Checked on the home page in both themes. No console output. Not committed.

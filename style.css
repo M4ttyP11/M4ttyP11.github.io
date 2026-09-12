@@ -1144,172 +1144,6 @@ a.card:hover .card-more svg { transform: translateX(3px); }
 .proj-hero .hero-actions { margin-top: 2rem; }
 .gallery img { aspect-ratio: 4 / 3; object-fit: cover; }
 
-/* ============================ PROJECT DIALOG ============================
-   The project pages under /projects/ stay real, linkable pages. On the index
-   their content is pulled into this dialog instead, so a click never loses
-   your place on the page. Modelled on the shadcn dialog: dimmed blurred
-   backdrop, hairline border, one radius, a quiet sticky header.
-   ======================================================================== */
-
-.modal {
-  width: min(1500px, 96vw);
-  max-width: none;
-  height: 94vh;
-  max-height: 94vh;
-  padding: 0;
-  border: 1px solid hsl(var(--border));
-  border-radius: var(--radius);
-  background: hsl(var(--background));
-  color: hsl(var(--foreground));
-  box-shadow: 0 25px 50px -12px hsl(240 6% 4% / .35);
-  overflow: hidden;
-}
-.modal[open] { display: flex; flex-direction: column; }
-
-.modal::backdrop {
-  background: hsl(240 10% 4% / .55);
-  backdrop-filter: blur(4px);
-}
-
-/* Enter animation. The dialog and its backdrop animate separately, which is
-   why the fade and the scale are two rules rather than one. */
-@keyframes modalIn {
-  from { opacity: 0; transform: translateY(8px) scale(.97); }
-  to   { opacity: 1; transform: none; }
-}
-@keyframes backdropIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-.modal[open] { animation: modalIn .22s cubic-bezier(.16,1,.3,1); }
-.modal[open]::backdrop { animation: backdropIn .22s ease; }
-
-@media (prefers-reduced-motion: reduce) {
-  .modal[open], .modal[open]::backdrop { animation: none; }
-}
-
-/* --- header ------------------------------------------------------------- */
-
-.modal-head {
-  display: flex; align-items: center; gap: 1rem;
-  padding: .85rem 1rem .85rem 1.5rem;
-  border-bottom: 1px solid hsl(var(--border));
-  background: hsl(var(--background) / .85);
-  backdrop-filter: saturate(180%) blur(12px);
-  flex-shrink: 0;
-}
-
-.modal-title {
-  font-size: .9rem; font-weight: 500;
-  letter-spacing: -0.01em;
-  margin: 0;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  min-width: 0;
-}
-
-.modal-head-actions {
-  margin-left: auto;
-  display: flex; align-items: center; gap: .4rem;
-  flex-shrink: 0;
-}
-
-.modal-icon-btn {
-  display: inline-grid; place-items: center;
-  width: 34px; height: 34px;
-  border: 1px solid hsl(var(--border));
-  border-radius: var(--radius-sm);
-  background: hsl(var(--card));
-  color: hsl(var(--muted-foreground));
-  cursor: pointer;
-  text-decoration: none;
-  transition: background .2s, color .2s, border-color .2s;
-}
-.modal-icon-btn:hover {
-  background: hsl(var(--muted));
-  border-color: hsl(var(--ring));
-  color: hsl(var(--foreground));
-}
-
-/* The dialog replaces the site nav while it is open, so the way out has to be
-   unmistakable. A bordered button with the word on it, not a ghost glyph. */
-.modal-close-btn {
-  display: inline-flex; align-items: center; gap: .45rem;
-  height: 34px;
-  padding: 0 .7rem;
-  border: 1px solid hsl(var(--border));
-  border-radius: var(--radius-sm);
-  background: hsl(var(--card));
-  color: hsl(var(--foreground));
-  font-family: var(--font); font-size: .82rem; font-weight: 500;
-  cursor: pointer;
-  transition: background .2s, border-color .2s;
-}
-.modal-close-btn:hover { background: hsl(var(--muted)); border-color: hsl(var(--ring)); }
-.modal-close-btn kbd {
-  font-family: var(--mono); font-size: .66rem;
-  padding: .1rem .3rem;
-  border: 1px solid hsl(var(--border));
-  border-radius: 4px;
-  background: hsl(var(--muted));
-  color: hsl(var(--muted-foreground));
-}
-@media (max-width: 620px) {
-  .modal-close-btn .modal-close-text,
-  .modal-close-btn kbd { display: none; }
-  .modal-close-btn { padding: 0; width: 34px; justify-content: center; }
-}
-
-/* A second way out at the end of a long scroll, so reaching the bottom never
-   strands the reader. Added by the dialog, not by the fetched page. */
-.modal-exit {
-  display: flex; justify-content: center;
-  padding: 0 0 clamp(2rem, 5vh, 3rem);
-  background: hsl(var(--muted) / .45);
-}
-
-/* --- body --------------------------------------------------------------- */
-
-.modal-body {
-  flex: 1;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-
-/* The fetched page carries top padding sized to clear the fixed site nav,
-   which the dialog does not have. */
-.modal-body .proj-hero { padding-top: clamp(2.25rem, 5vh, 3rem); }
-.modal-body .proj-body { padding: clamp(2.5rem, 6vh, 4rem) 0; }
-.modal-body .container { width: min(1240px, 90%); }
-.modal-body .proj-next { border-bottom: 0; }
-
-.modal-loading {
-  display: grid; place-items: center;
-  min-height: 320px;
-  color: hsl(var(--muted-foreground));
-  font-size: .9rem;
-}
-.modal-spinner {
-  width: 22px; height: 22px;
-  border: 2px solid hsl(var(--border));
-  border-top-color: hsl(var(--accent));
-  border-radius: 50%;
-  animation: spin .7s linear infinite;
-  margin-bottom: .9rem;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* Scroll lock. Kept as a class so the dialog owns it and nothing else has to
-   know the page is frozen. */
-body.modal-open { overflow: hidden; }
-
-@media (max-width: 720px) {
-  .modal {
-    width: 100vw; height: 100vh; max-height: 100vh;
-    border-radius: 0; border: 0;
-  }
-  .modal-head { padding-left: 1.1rem; }
-}
-
 /* ============================== CAROUSEL ================================
    One image at a time with arrows, dots and a counter. The markup is a plain
    stack of <figure> slides, so with no JS every image is still there, just
@@ -1544,7 +1378,7 @@ body.modal-open { overflow: hidden; }
   /* Not --border: in dark it is 15% lightness on a 4% ground and vanishes.
      A translucent grey holds the same weight in both themes. */
   stroke: hsl(var(--muted-foreground) / .18);
-  stroke-width: 4.2;
+  stroke-width: 5.2;
   stroke-linecap: round;
 }
 
@@ -1553,7 +1387,7 @@ body.modal-open { overflow: hidden; }
 .circuit-window {
   fill: none;
   stroke: hsl(var(--muted-foreground) / .55);
-  stroke-width: 4.2;
+  stroke-width: 5.2;
   stroke-linecap: butt;
 }
 
@@ -1561,18 +1395,64 @@ body.modal-open { overflow: hidden; }
 .circuit-line {
   fill: none;
   stroke: hsl(var(--accent));
-  stroke-width: 4.2;
+  stroke-width: 5.2;
   stroke-linecap: butt;
   transition: stroke .3s ease;
 }
 
-.circuit-sf {
-  stroke: hsl(var(--foreground));
-  stroke-width: .9;
-  stroke-linecap: round;
+/* Track furniture, generated in site.js off the path: red and white kerbs
+   down the inside of every corner, tyre barriers round the outside of the
+   quick ones, and a checkered line. It all belongs to the road it sits
+   beside, so out of the lit window it dims with it. */
+.circuit-corner { transition: opacity .3s ease; }
+.circuit-corner[data-far="true"] { opacity: .2; }
+
+.circuit-rumble-edge,
+.circuit-rumble-base,
+.circuit-rumble {
+  fill: none;
+  stroke-width: 1.05;
+  stroke-linecap: butt;
+}
+/* Grey edge, white over it, red dashed over that: a kerb in three elements
+   rather than one per block of colour. Without the edge the white half of a
+   kerb is white on white wherever it hangs off the road on a light page. */
+.circuit-rumble-edge {
+  stroke: hsl(var(--muted-foreground) / .38);
+  stroke-width: 1.33;
+}
+.circuit-rumble-base { stroke: hsl(0 0% 100% / .88); }
+.circuit-rumble {
+  stroke: hsl(2 74% 52%);
+  stroke-dasharray: 1.7 1.7;
 }
 
-/* Apex markers, not map pins. The road is 4.2 units across, so anything much
+/* A stack of tyres at this size reads as a ring. Filled, it reads as a hole
+   punched in the ground. */
+.circuit-tyre {
+  fill: none;
+  stroke: var(--tyre);
+  stroke-width: .3;
+}
+
+.circuit-flag-a { fill: hsl(var(--foreground)); }
+.circuit-flag-b { fill: hsl(var(--background)); }
+
+/* Grid boxes are paint on the road, so they are white in both themes rather
+   than a token that flips with the page. */
+.circuit-box {
+  fill: none;
+  stroke: hsl(0 0% 100% / .72);
+  stroke-width: .24;
+  stroke-linecap: square;
+}
+
+/* The line and its grid fade with the road under them, the same as a corner
+   and its kerb. */
+.circuit-flag { transition: opacity .3s ease; }
+.circuit-flag[data-far="true"] { opacity: .2; }
+
+/* Apex markers, not map pins. The road is 5.2 units across, so anything much
    over a unit reads as a hole punched in the track. Radii are set here rather
    than in the markup, which still carries the minimap's. */
 .circuit-dots circle {
@@ -1590,12 +1470,24 @@ body.modal-open { overflow: hidden; }
   r: 1.7;
 }
 
-.circuit-car { color: hsl(var(--foreground)); }
-.circuit-car path {
-  fill: currentColor;
+/* Rubber. Near-black on a light page, but a true black disappears into a 4%
+   ground in dark, so the dark theme lifts it rather than inverting it: a
+   light-coloured tyre would read as anything but a tyre. */
+.circuit { --tyre: hsl(220 10% 20%); }
+[data-theme="dark"] .circuit { --tyre: hsl(220 8% 36%); }
+
+/* The car wears the strip's accent, so it turns orange with the rest of an
+   out lap without a second livery to maintain. */
+.circuit-car .car-body { fill: hsl(var(--accent)); }
+.circuit-car .car-part { fill: var(--tyre); }
+.circuit-car .car-glass { fill: hsl(var(--background)); }
+.circuit-car .car-body,
+.circuit-car .car-part {
+  /* The trail behind the car is the accent too, so without a cut-out line
+     round it the car disappears into the road it has just driven. */
   stroke: hsl(var(--background));
-  stroke-width: .18;
-  paint-order: stroke;   /* keeps the car readable when it sits on a dot */
+  stroke-width: .11;
+  paint-order: stroke;
 }
 
 /* The still target. The dots are the precise way to jump to a section, but
@@ -1649,16 +1541,6 @@ body.modal-open { overflow: hidden; }
   }
 }
 
-/* The car is in the garage while a project dialog is open. The strip stays
-   in place, dimmed and inert: the lap has not moved, so hiding it would read
-   as a failure rather than a pause. Specificity beats the [data-ready] rule
-   that turns the strip on. */
-body.modal-open .circuit[data-ready="true"] {
-  opacity: .3;
-  filter: saturate(.25);
-  pointer-events: none;
-}
-
 .circuit-label {
   margin: .3rem 0 0;
   font-family: var(--mono);
@@ -1671,6 +1553,13 @@ body.modal-open .circuit[data-ready="true"] {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* An out lap, on a project page. Same widget, different track: open rather
+   than closed, generated from the page's headings, and in its own colour so
+   it never reads as the circuit you left. Only the strip is retinted, so the
+   page around it keeps the site accent. */
+.circuit[data-mode="outlap"] { --accent: 28 92% 42%; }
+[data-theme="dark"] .circuit[data-mode="outlap"] { --accent: 32 95% 58%; }
 
 /* The strip needs gutter of its own, so it appears only once the page is wide
    enough to give it some and the container is pulled in to leave room. Below

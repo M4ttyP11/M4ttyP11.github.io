@@ -518,7 +518,7 @@
      nav above, so this is aria-hidden and only appears once JS has measured
      the page. Desktop only, and it stays off under reduced motion.
      ================================================================ -->
-<aside class="circuit" id="circuit" aria-hidden="true">
+<aside class="circuit" id="circuit" data-mode="lap" aria-hidden="true">
   <!-- A window onto the circuit around your current position. The car is fixed
        at the SVG origin pointing up the screen, and #circuitWorld carries the
        inverse transform, so the track slides and turns beneath it. The viewBox
@@ -542,15 +542,14 @@
 
   <svg class="circuit-map" id="circuitMap" viewBox="-24 -84 48 120" role="presentation" focusable="false"
        preserveAspectRatio="xMidYMid meet">
-    <g id="circuitWorld">
+    <g class="circuit-world" id="circuitWorld">
       <path class="circuit-kerb" id="circuitPath"
-            d="M 54.75 150 L 161.75 150 A 32 32 0 0 0 184.37 140.63 L 197 128 A 16.54 16.54 0 0 0 191.24 100.86 L 178.56 95.99 A 16.64 16.64 0 0 1 174.75 67 L 180.41 62.88 A 16 16 0 0 0 176.34 34.86 L 150.01 25.54 A 30 30 0 0 0 129.99 25.54 L 97.85 36.92 A 23.27 23.27 0 0 0 84 67.5 L 86.22 73.06 A 16 16 0 0 1 71.37 95 L 54 95 A 24 24 0 0 0 30 119 L 30 125.25 A 24.75 24.75 0 0 0 54.75 150 Z"/>
+            d="M 108.25 150 L 161.75 150 A 32 32 0 0 0 184.37 140.63 L 197 128 A 16.54 16.54 0 0 0 191.24 100.86 L 178.56 95.99 A 16.64 16.64 0 0 1 174.75 67 L 180.41 62.88 A 16 16 0 0 0 176.34 34.86 L 150.01 25.54 A 30 30 0 0 0 129.99 25.54 L 97.85 36.92 A 23.27 23.27 0 0 0 84 67.5 L 86.22 73.06 A 16 16 0 0 1 71.37 95 L 54 95 A 24 24 0 0 0 30 119 L 30 125.25 A 24.75 24.75 0 0 0 54.75 150 L 108.25 150 Z"/>
       <path class="circuit-window" id="circuitWindow"/>
       <path class="circuit-line" id="circuitLine"/>
-      <line class="circuit-sf" x1="54.75" y1="143" x2="54.75" y2="157"/>
 
       <g class="circuit-dots" id="circuitDots">
-        <circle data-target="#top"        data-name="Start/finish"   cx="54.75" cy="150" r="4.6"/>
+        <circle data-target="#top"        data-name="Start/finish"   cx="108.25" cy="150" r="4.6"/>
         <circle data-target="#education"  data-name="Education"      cx="173.99" cy="147.56" r="4.6"/>
         <circle data-target="#major"      data-name="Major projects" cx="201.48" cy="112.87" r="4.6"/>
         <circle data-target="#projects"   data-name="Other work"     cx="186.84" cy="47.64" r="4.6"/>
@@ -559,35 +558,32 @@
       </g>
     </g>
 
-    <!-- Drawn in track units, so it is a car-sized car: the road is 4.2 units
-         across, call that a 12m track, which puts a 2m by 4.6m car at roughly
-         0.7 by 1.6. Nose along +x, and the group turns it to face up. -->
-    <g class="circuit-car" id="circuitCar" transform="rotate(-90)">
-      <path d="M .82 0 L .66 .3 L .1 .36 L -.42 .36 Q -.8 .36 -.8 .1 L -.8 -.1
-               Q -.8 -.36 -.42 -.36 L .1 -.36 L .66 -.3 Z"/>
+    <!-- The car, drawn in track units so it is a car-sized car: the road is
+         5.2 units across, call that a 15m track, which puts a 2m by 4.6m car
+         at roughly 0.8 by 2.3 once the wings are counted. Scaled up from
+         there, because a car drawn to scale against a real road is a speck in
+         a strip 114px wide. Nose along +x, and the group turns it to face up
+         the screen.
+
+         Order matters: wings and tyres go down first, the chassis over them,
+         then the driver, so the body covers the inner edge of the rear tyres
+         the way a sidepod does. -->
+    <g class="circuit-car" id="circuitCar" transform="rotate(-90) scale(1.65)">
+      <rect class="car-part" x="-1.16" y="-.66" width=".18" height="1.32" rx=".05"/>
+      <rect class="car-part" x="-.94" y="-.7" width=".52" height=".3" rx=".09"/>
+      <rect class="car-part" x="-.94" y=".4" width=".52" height=".3" rx=".09"/>
+      <rect class="car-part" x=".4" y="-.66" width=".4" height=".26" rx=".08"/>
+      <rect class="car-part" x=".4" y=".4" width=".4" height=".26" rx=".08"/>
+      <rect class="car-part" x=".96" y="-.62" width=".16" height="1.24" rx=".04"/>
+      <path class="car-body" d="M 1.02 .11 L .55 .16 L .28 .24 L .05 .3 L -.15 .44
+               L -.78 .44 L -.98 .3 L -.98 -.3 L -.78 -.44 L -.15 -.44 L .05 -.3
+               L .28 -.24 L .55 -.16 L 1.02 -.11 Z"/>
+      <rect class="car-glass" x="-.34" y="-.15" width=".3" height=".3" rx=".1"/>
+      <circle class="car-glass" cx=".14" cy="0" r=".16"/>
     </g>
   </svg>
   <p class="circuit-label" id="circuitLabel">Start/finish</p>
 </aside>
-<!-- Project detail dialog. Filled from the real pages under /projects/, which
-     stay linkable on their own. Without JS, or if the fetch fails, every link
-     that opens this just navigates to that page instead. -->
-<dialog class="modal" id="projModal" aria-labelledby="modalTitle">
-  <div class="modal-head">
-    <p class="modal-title" id="modalTitle">Project</p>
-    <div class="modal-head-actions">
-      <a class="modal-icon-btn" id="modalFull" href="#" aria-label="Open as a full page" title="Open as a full page">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
-      </a>
-      <button class="modal-close-btn" id="modalClose">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
-        <span class="modal-close-text">Close</span>
-        <kbd>Esc</kbd>
-      </button>
-    </div>
-  </div>
-  <div class="modal-body" id="modalBody"></div>
-</dialog>
 
 <script src="site.js"></script>
 </body>
