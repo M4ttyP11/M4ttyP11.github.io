@@ -737,11 +737,15 @@
       var gap = closed ? total - lit : total * 2;
       win.style.strokeDasharray = lit + ' ' + gap;
       win.style.strokeDashoffset = WIN_BACK - d;
-      // The accent only trails behind the car, and only as far as the lap
-      // has actually run, so nothing is lit at the start that has not been
-      // driven.
+      // The accent covers the road already driven, so nothing is lit at the
+      // start of a lap that has not been. That is the stretch behind the car,
+      // and near the end of a closed lap it is also the road ahead: the
+      // window has reached back round past the line onto the opening straight,
+      // which was driven at the start.
       var back = Math.min(WIN_BACK, d);
-      line.style.strokeDasharray = back + ' ' + (closed ? total - back : total * 2);
+      var fwd = closed ? Math.max(0, d + WIN_AHEAD - total) : 0;
+      var run = Math.min(total, back + fwd);
+      line.style.strokeDasharray = run + ' ' + (closed ? total - run : total * 2);
       line.style.strokeDashoffset = back - d;
 
       // The car is fixed at the origin pointing up the screen, so the world

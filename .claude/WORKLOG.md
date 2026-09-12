@@ -877,3 +877,13 @@ current dot and the car's path point agree to 0.01 units.
 
 Open: marker spacing round the track now mirrors section length, so short
 sections (Contact) sit close together. That is the price of constant speed.
+
+## 2026-09-12, the finished lap now stays accent ahead of the car
+
+At the foot of the page the window has swept back round onto the start/finish
+straight, which was driven at the start of the lap, but the accent only ever
+trailed behind the car so that road showed grey. `render` now extends the
+accent forward by `d + WIN_AHEAD - total` on a closed lap, so the last stretch
+of the page has the whole lit window in accent. An out lap is unchanged, it
+never wraps. Verified at the bottom of index.html: dash 168 units, the full
+60 back plus 108 ahead.
