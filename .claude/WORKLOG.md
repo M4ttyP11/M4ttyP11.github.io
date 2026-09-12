@@ -915,3 +915,19 @@ grows behind the car as the page scrolls and nothing ahead of the car is lit.
 
 Measured down the page: 25% gives 132.8 of 531.3 units, 60% gives 318.8, the
 foot gives the full 531.3.
+
+## 2026-09-12, the Next chip starts a new lap instead of reversing
+
+At the foot of the page the chip points at Education, the first corner of the
+next lap. Scrolling there smoothly ran the car round the circuit backwards and
+unpainted the trail. The chip only ever points forward, so a target above the
+current scroll is now taken in one step: `window.scrollTo` with
+`behavior: 'instant'` (not `'auto'`, which defers to the page's
+`scroll-behavior: smooth`), and `heading` reset to null so the car faces up the
+new road rather than sweeping round to it. The trail clears with the jump.
+
+Forward targets are unchanged, they still scroll smoothly. Dot clicks are
+untouched.
+
+Verified: at the foot the chip reads Education, clicking lands at y=1201 with
+the trail cut back to 108.2 of 531.3 units.

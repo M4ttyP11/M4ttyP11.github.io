@@ -872,7 +872,23 @@
       }
       var s = stops[nextIndex === null ? 1 % stops.length : nextIndex];
       var el = s && document.querySelector(s.dot.dataset.target);
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (!el) return;
+      // The chip only ever points forward, so a target above the current
+      // position is the next lap starting rather than a jump back up this
+      // one. Scrolling there smoothly would run the car round the circuit
+      // backwards and unpaint the trail behind it. The lap is over, so take
+      // it in one step instead: the trail clears and the next lap starts
+      // from the line.
+      var top = el.getBoundingClientRect().top + window.scrollY - 80;
+      if (top >= window.scrollY) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+      // 'instant' rather than 'auto': the page sets scroll-behavior: smooth,
+      // and 'auto' defers to it.
+      window.scrollTo({ top: top, behavior: 'instant' });
+      heading = null;   // face up the new road rather than sweeping round to it
+      schedule();
     });
 
     function start() {
