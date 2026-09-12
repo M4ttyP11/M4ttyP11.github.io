@@ -667,3 +667,19 @@ following it is correct.
 Open: not committed. Step 5 next, extracting the component so project pages can
 generate an out lap from their h2s. That is the big one, and steps 1 to 4 are
 the whole idea working, so committing before starting it is worth considering.
+
+## 2026-09-12, steps 1 to 4 shipped to main
+
+`0ddfed4`, the whole circuit strip in one commit: the transform pivot, the
+strip layout and dash window, the eased heading and next-corner chip, and the
+freeze on modal open. Fast-forwarded straight onto `origin/main`, since
+`origin/main` was already at this branch's old tip, so there is no merge
+commit. Branch `M4ttyP11/styling-experiments` pushed as well.
+
+Local `main` in the root checkout at `C:/Users/Matty/orca/M4ttyP11.github.io`
+is stale at `27c0791` and was left alone, since it is another worktree.
+`origin/main` is correct and that is what Pages builds.
+
+Open: step 5, the out laps on project pages, and step 6, continuity across
+navigation. Matty also wants a detail and colour pass on the strip later:
+different track shapes, colour, small icons.
