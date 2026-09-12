@@ -1,0 +1,4 @@
+# A stitched read-through of every page, for reviewing the site in one
+# scroll. A local snapshot, not part of the site, and it goes stale as soon
+# as the real pages change.
+all-pages.html
