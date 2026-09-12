@@ -379,7 +379,6 @@
   function initCircuit(root) {
     var path = root.querySelector('.circuit-kerb');
     var line = root.querySelector('.circuit-line');
-    var trail = root.querySelector('.circuit-trail');
     var win = root.querySelector('.circuit-window');
     var world = root.querySelector('.circuit-world');
     var label = root.querySelector('.circuit-label');
@@ -643,7 +642,6 @@
       // Every overlay layer traces the same track, so they take their
       // geometry from the one copy in the markup.
       var d = path.getAttribute('d');
-      trail.setAttribute('d', d);
       line.setAttribute('d', d);
       win.setAttribute('d', d);
 
@@ -739,24 +737,13 @@
       var gap = closed ? total - lit : total * 2;
       win.style.strokeDasharray = lit + ' ' + gap;
       win.style.strokeDashoffset = WIN_BACK - d;
-      /* Accent is road already driven, so the lap fills in with it as it is
-         run and nothing is lit at the start that has not been driven. It goes
-         down in two layers on the same terms as the road itself: the whole
-         driven stretch, from the start of the lap up to the car, faint; and
-         the part of it inside the lit window, bright.
-
-         The bright part runs from the car back, and near the end of a closed
-         lap forward as well, because by then the window reaches round past
-         the line onto the opening straight, which was driven at the start. */
+      // Accent is the road already driven: it starts at the line and grows
+      // behind the car as the lap is run, so the lap fills in rather than
+      // dragging a tail of its own length around. Nothing ahead of the car is
+      // lit, and nothing is lit at the start that has not been driven.
       var driven = Math.min(total, d);
-      trail.style.strokeDasharray = driven + ' ' + (closed ? total - driven : total * 2);
-      trail.style.strokeDashoffset = 0;
-
-      var back = Math.min(WIN_BACK, d);
-      var fwd = closed ? Math.max(0, d + WIN_AHEAD - total) : 0;
-      var run = Math.min(total, back + fwd);
-      line.style.strokeDasharray = run + ' ' + (closed ? total - run : total * 2);
-      line.style.strokeDashoffset = back - d;
+      line.style.strokeDasharray = driven + ' ' + (closed ? total - driven : total * 2);
+      line.style.strokeDashoffset = 0;
 
       // The car is fixed at the origin pointing up the screen, so the world
       // carries the inverse: put the current point at the origin, then turn
@@ -1089,7 +1076,6 @@
       ' preserveAspectRatio="xMidYMid meet">' +
         '<g class="circuit-world">' +
           '<path class="circuit-kerb" d="' + track.d + '"/>' +
-          '<path class="circuit-trail"/>' +
           '<path class="circuit-window"/>' +
           '<path class="circuit-line"/>' +
           '<g class="circuit-dots">' +

@@ -904,3 +904,14 @@ window reaches it.
 
 Checked at half page (trail 275.8 of 531.3, bright 60 behind) and at the foot
 (trail the full 531.3, bright 168 covering the whole window).
+
+## 2026-09-12, accent grows from the line to the car, one layer again
+
+Correction to the entry above: the two-layer trail and the forward wrap are
+both gone. The accent is a single `.circuit-line` running from the start/finish
+line up to the car, at full strength, dashed `[0, d]` with a zero offset. It
+grows behind the car as the page scrolls and nothing ahead of the car is lit.
+`.circuit-trail` removed from `index.html`, the generated strip and `style.css`.
+
+Measured down the page: 25% gives 132.8 of 531.3 units, 60% gives 318.8, the
+foot gives the full 531.3.

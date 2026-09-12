@@ -1391,19 +1391,8 @@ a.card:hover .card-more svg { transform: translateX(3px); }
   stroke-linecap: butt;
 }
 
-/* The whole lap driven so far, back to the start of it, dashed in site.js.
-   Faint, the way the road outside the lit window is faint: it says which of
-   the circuit you have already been round without lighting all of it. */
-.circuit-trail {
-  fill: none;
-  stroke: hsl(var(--accent) / .32);
-  stroke-width: 5.2;
-  stroke-linecap: butt;
-  transition: stroke .3s ease;
-}
-
-/* The driven road inside the lit window, at full strength. Also dashed in
-   site.js. */
+/* The lap driven so far: from the start/finish line up to the car, growing
+   behind it as the page is scrolled. Dashed in site.js. */
 .circuit-line {
   fill: none;
   stroke: hsl(var(--accent));
