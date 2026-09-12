@@ -379,6 +379,7 @@
   function initCircuit(root) {
     var path = root.querySelector('.circuit-kerb');
     var line = root.querySelector('.circuit-line');
+    var trail = root.querySelector('.circuit-trail');
     var win = root.querySelector('.circuit-window');
     var world = root.querySelector('.circuit-world');
     var label = root.querySelector('.circuit-label');
@@ -639,9 +640,10 @@
         };
       });
 
-      // Both overlay layers trace the same track, so they take their
+      // Every overlay layer traces the same track, so they take their
       // geometry from the one copy in the markup.
       var d = path.getAttribute('d');
+      trail.setAttribute('d', d);
       line.setAttribute('d', d);
       win.setAttribute('d', d);
 
@@ -737,11 +739,19 @@
       var gap = closed ? total - lit : total * 2;
       win.style.strokeDasharray = lit + ' ' + gap;
       win.style.strokeDashoffset = WIN_BACK - d;
-      // The accent covers the road already driven, so nothing is lit at the
-      // start of a lap that has not been. That is the stretch behind the car,
-      // and near the end of a closed lap it is also the road ahead: the
-      // window has reached back round past the line onto the opening straight,
-      // which was driven at the start.
+      /* Accent is road already driven, so the lap fills in with it as it is
+         run and nothing is lit at the start that has not been driven. It goes
+         down in two layers on the same terms as the road itself: the whole
+         driven stretch, from the start of the lap up to the car, faint; and
+         the part of it inside the lit window, bright.
+
+         The bright part runs from the car back, and near the end of a closed
+         lap forward as well, because by then the window reaches round past
+         the line onto the opening straight, which was driven at the start. */
+      var driven = Math.min(total, d);
+      trail.style.strokeDasharray = driven + ' ' + (closed ? total - driven : total * 2);
+      trail.style.strokeDashoffset = 0;
+
       var back = Math.min(WIN_BACK, d);
       var fwd = closed ? Math.max(0, d + WIN_AHEAD - total) : 0;
       var run = Math.min(total, back + fwd);
@@ -1079,6 +1089,7 @@
       ' preserveAspectRatio="xMidYMid meet">' +
         '<g class="circuit-world">' +
           '<path class="circuit-kerb" d="' + track.d + '"/>' +
+          '<path class="circuit-trail"/>' +
           '<path class="circuit-window"/>' +
           '<path class="circuit-line"/>' +
           '<g class="circuit-dots">' +

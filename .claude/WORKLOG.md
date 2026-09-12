@@ -887,3 +887,20 @@ accent forward by `d + WIN_AHEAD - total` on a closed lap, so the last stretch
 of the page has the whole lit window in accent. An out lap is unchanged, it
 never wraps. Verified at the bottom of index.html: dash 168 units, the full
 60 back plus 108 ahead.
+
+## 2026-09-12, the driven lap now fills in, in two layers
+
+Matty wanted the accent to read as the lap filling in, not a short tail
+following the car. The trail is now two layers on the same terms as the road:
+a new `.circuit-trail` path carries the whole driven stretch, start of lap to
+car, at 32% accent, and `.circuit-line` keeps the part of it inside the lit
+window at full strength. The forward wrap on `.circuit-line` stays, but it no
+longer appears out of nothing: that road is already faint accent before the
+window reaches it.
+
+- `index.html`, `site.js` generated strip: `.circuit-trail` added under the
+  window layer; `style.css` styles it.
+- `site.js` `render`: trail dash is `[0, d]`, bright dash unchanged.
+
+Checked at half page (trail 275.8 of 531.3, bright 60 behind) and at the foot
+(trail the full 531.3, bright 168 covering the whole window).
