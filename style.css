@@ -1452,7 +1452,7 @@ a.card:hover .card-more svg { transform: translateX(3px); }
 .circuit-flag { transition: opacity .3s ease; }
 .circuit-flag[data-far="true"] { opacity: .2; }
 
-/* Apex markers, not map pins. The road is 5.2 units across, so anything much
+/* Section markers, not map pins. The road is 5.2 units across, so anything much
    over a unit reads as a hole punched in the track, which is why the radius
    lives in the markup at 1.1 rather than being left to CSS: Safari ignores the
    CSS `r` property, and a fallback radius big enough for a minimap renders as

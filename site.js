@@ -350,12 +350,12 @@
 /* =========================================================================
    Circuit view
 
-   Scroll position drives a lap. The corner dots are placed on real corners
-   of the path, and their position along the lap is found once by walking a
-   lookup table of sampled points. Scroll is then mapped through those
-   corners piecewise, so the current point is exactly on a dot when its
-   section reaches the top of the viewport, whatever the section heights are.
-   Reaching the footer completes the lap.
+   Scroll position drives a lap, one for one: a tenth of the page is a tenth
+   of the lap, so the car holds a steady speed the whole way down. The section
+   markers are then placed onto the path at their own share of the scroll, so
+   the car is exactly on a marker when that section reaches the top of the
+   viewport, whatever the section heights are. Reaching the footer completes
+   the lap.
 
    The car does not move. It sits at the SVG origin pointing up the screen,
    and the track group takes the inverse transform, so the circuit slides and
@@ -392,7 +392,6 @@
     // rather than taken modulo, and nothing resets at the end.
     var closed = root.dataset.mode !== 'outlap';
 
-    var STEPS = 900;
     // How much road is lit either side of the car, in track units. The frame
     // is 84 units ahead of the car and 36 behind, so both run past its edges
     // and the ends of the dash never show.
@@ -400,7 +399,6 @@
     var WIN_BACK = 60;
     var total = 0;
     var stops = [];
-    var keys = [];
     var maxScroll = 1;
     var ready = false;
     var hovering = null;
@@ -631,26 +629,12 @@
       total = path.getTotalLength();
       if (!total) return false;
 
-      var lut = [];
-      for (var i = 0; i <= STEPS; i++) lut.push(path.getPointAtLength(total * i / STEPS));
-
-      stops = dots.map(function (dot, idx) {
-        var cx = parseFloat(dot.getAttribute('cx'));
-        var cy = parseFloat(dot.getAttribute('cy'));
-        var best = 0, bestD = Infinity;
-        for (var i = 0; i <= STEPS; i++) {
-          var dx = lut[i].x - cx, dy = lut[i].y - cy, d = dx * dx + dy * dy;
-          if (d < bestD) { bestD = d; best = i; }
-        }
+      stops = dots.map(function (dot) {
         return {
           dot: dot,
           el: document.querySelector(dot.dataset.target),
           name: dot.dataset.name,
-          // The first dot sits on the start/finish line, where a closed loop
-          // meets itself and the nearest sample could just as easily be the
-          // last one. On an out lap it is the pit exit, which is the start
-          // of the path either way.
-          f: idx === 0 ? 0 : best / STEPS,
+          f: 0,
           scroll: 0
         };
       });
@@ -723,27 +707,26 @@
         i = j;
       }
 
-      keys = stops.map(function (s) { return { s: s.scroll, f: s.f }; });
-      // The bottom of the page is the line, so the run from the last corner
-      // to it is the final stretch of scroll.
-      keys.push({ s: 1, f: 1 });
-    }
-
-    function lapAt(p) {
-      for (var i = 0; i < keys.length - 1; i++) {
-        var a = keys[i], b = keys[i + 1];
-        if (p <= b.s) {
-          var span = b.s - a.s;
-          return span > 0 ? a.f + (b.f - a.f) * ((p - a.s) / span) : b.f;
-        }
-      }
-      return 1;
+      /* Scroll maps straight onto lap distance, one for one, so the car holds
+         the same speed the whole way down the page. That only works if each
+         marker sits where its section's share of the scroll puts it, so the
+         markers are moved onto the path here rather than being fixed to
+         corners in the markup: a section worth a fifth of the page gets a
+         fifth of the lap, and the car is still exactly on a marker when its
+         section reaches the top of the viewport. */
+      stops.forEach(function (s) {
+        s.f = s.scroll;
+        var pt = at(total * s.f);
+        s.dot.setAttribute('cx', n2(pt.x));
+        s.dot.setAttribute('cy', n2(pt.y));
+      });
     }
 
     function render() {
       if (!ready) return;
       var p = Math.min(1, Math.max(0, window.scrollY / maxScroll));
-      var f = lapAt(p);
+      // One lap per page, at a constant rate: see measure().
+      var f = p;
 
       // A dash of length L starting at distance a along the path. On a
       // closed lap the gap is the rest of the loop, so the dash wraps at the

@@ -854,3 +854,26 @@ road: circles wider than the track.
   is supported everywhere.
 
 Open: nothing. Not committed.
+
+## 2026-09-12, constant lap speed, markers placed from the scroll
+
+The car sped up and slowed down as it went round, because scroll was mapped
+piecewise onto fixed corner positions: a long section covering a short stretch
+of track crawled, a short one covering a long stretch bolted.
+
+Now scroll maps onto lap distance one for one (`f = p` in `render`), and the
+markers are moved onto the path in `measure` at their own section's share of
+the page scroll. The car still lands exactly on a marker when that section
+reaches the top of the viewport, and it holds the same speed throughout.
+
+- `site.js`: dropped the `keys`/`lapAt` piecewise mapping, the `STEPS` LUT and
+  the nearest-sample search in `build`; `measure` now sets each stop's `f` from
+  its scroll fraction and writes the dot's cx/cy from the path.
+- `index.html`, `style.css`: comments only, the markup cx/cy are now just a
+  starting guess.
+
+Verified in the Orca browser against a no-store local server: at #projects the
+current dot and the car's path point agree to 0.01 units.
+
+Open: marker spacing round the track now mirrors section length, so short
+sections (Contact) sit close together. That is the price of constant speed.
