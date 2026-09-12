@@ -1453,21 +1453,25 @@ a.card:hover .card-more svg { transform: translateX(3px); }
 .circuit-flag[data-far="true"] { opacity: .2; }
 
 /* Apex markers, not map pins. The road is 5.2 units across, so anything much
-   over a unit reads as a hole punched in the track. Radii are set here rather
-   than in the markup, which still carries the minimap's. */
+   over a unit reads as a hole punched in the track, which is why the radius
+   lives in the markup at 1.1 rather than being left to CSS: Safari ignores the
+   CSS `r` property, and a fallback radius big enough for a minimap renders as
+   a dot wider than the road. Growth on hover goes through transform, which
+   every browser honours. */
 .circuit-dots circle {
   fill: hsl(var(--muted-foreground));
   stroke: none;
   cursor: pointer;
-  r: 1.1;
-  transition: fill .2s ease, r .2s ease;
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: fill .2s ease, transform .2s ease;
 }
 
-.circuit-dots circle:hover { fill: hsl(var(--accent)); r: 1.7; }
+.circuit-dots circle:hover { fill: hsl(var(--accent)); transform: scale(1.55); }
 
 .circuit-dots circle[data-current="true"] {
   fill: hsl(var(--accent));
-  r: 1.7;
+  transform: scale(1.55);
 }
 
 /* Rubber. Near-black on a light page, but a true black disappears into a 4%

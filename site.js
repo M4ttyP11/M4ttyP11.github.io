@@ -1097,7 +1097,7 @@
           '<g class="circuit-dots">' +
             marks.map(function (m) {
               return '<circle data-target="' + esc(m.target) + '" data-name="' + esc(m.name) +
-                     '" cx="' + n2(m.x) + '" cy="' + n2(m.y) + '" r="4.6"/>';
+                     '" cx="' + n2(m.x) + '" cy="' + n2(m.y) + '" r="1.1"/>';
             }).join('') +
           '</g>' +
         '</g>' +

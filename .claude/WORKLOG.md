@@ -839,3 +839,18 @@ The strip was a blob on a grey ribbon. It now reads as a track with a car on it.
   road with margin. The car came down from 1.8 to 1.65 scale to fit its box,
   which also applies to out laps since there is one car.
 - Checked on the home page in both themes. No console output. Not committed.
+
+## 2026-09-12, circuit dots rendered wider than the track in some browsers
+
+The apex dots carried `r="4.6"` in the markup (left over from the old minimap)
+and were resized to 1.1 only by the CSS `r` geometry property. Safari does not
+support CSS `r`, so there the attribute won, giving 9.2-unit dots on a 5.2-unit
+road: circles wider than the track.
+
+- `index.html` and the JS-built strip in `site.js`: dots now carry `r="1.1"` in
+  the markup, so every browser draws the right size with no CSS involved.
+- `style.css`: dropped the `r` declarations; hover and current-section growth
+  now go through `transform: scale(1.55)` with `transform-box: fill-box`, which
+  is supported everywhere.
+
+Open: nothing. Not committed.
