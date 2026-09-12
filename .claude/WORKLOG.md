@@ -931,3 +931,18 @@ untouched.
 
 Verified: at the foot the chip reads Education, clicking lands at y=1201 with
 the trail cut back to 108.2 of 531.3 units.
+
+## 2026-09-12, the Next chip drives the lap out instead of teleporting
+
+Correction to the entry above: the instant jump stays, but the car no longer
+lands with it. `render` now takes its lap fraction from a `lapRun` animation
+when one is set, instead of from the scroll. The chip's wrap case sets
+`lapRun = {from: 0, to: <target scroll fraction>, ms: 1100}` with a cubic ease
+out, so the car crosses the line, the trail clears, and it drives forward round
+to the corner the chip named while the page is already there. A wheel, touch or
+key event cancels the run and hands the car back to the scroll.
+
+Verified in the Orca browser: clicking the chip at the foot lands the page at
+y=1201 and the trail passes through intermediate lengths (80, then 107 of the
+final 108.2 units) rather than snapping. Frame sampling is throttled in a
+background tab, so the intermediate count is not meaningful, only the values.

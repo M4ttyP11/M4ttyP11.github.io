@@ -407,6 +407,8 @@
     var FINISH = -1;   // the chip past the last corner of an out lap
     // Heading in degrees, eased toward the tangent rather than snapped to it.
     var heading = null;
+    // A lap being run out under its own power rather than by the scroll.
+    var lapRun = null;
 
     // Distance along the path, wrapped on a closed lap and clamped on an
     // open one, which is the only place the two shapes differ geometrically.
@@ -725,8 +727,22 @@
     function render() {
       if (!ready) return;
       var p = Math.min(1, Math.max(0, window.scrollY / maxScroll));
-      // One lap per page, at a constant rate: see measure().
+      // One lap per page, at a constant rate: see measure(). The exception is
+      // the run out of a finished lap, which drives the car itself for a
+      // moment while the page has already jumped: see the Next chip.
       var f = p;
+      if (lapRun) {
+        var k = (performance.now() - lapRun.t0) / lapRun.ms;
+        if (k >= 1) {
+          lapRun = null;
+        } else {
+          // Ease out, so it leaves the line at speed and settles on the
+          // corner rather than stopping dead.
+          f = lapRun.from + (lapRun.to - lapRun.from) * (1 - Math.pow(1 - k, 3));
+          p = f;
+          schedule();
+        }
+      }
 
       // A dash of length L starting at distance a along the path. On a
       // closed lap the gap is the rest of the loop, so the dash wraps at the
@@ -884,10 +900,18 @@
         el.scrollIntoView({ behavior: 'smooth', block: 'start' });
         return;
       }
-      // 'instant' rather than 'auto': the page sets scroll-behavior: smooth,
-      // and 'auto' defers to it.
+      /* The chip only ever points forward, so a target above the current
+         position is the next lap starting rather than a jump back up this
+         one. Scrolling there smoothly would run the car round the circuit
+         backwards and unpaint the trail behind it.
+
+         So the page goes in one step, instantly, and the car carries on
+         forward instead: over the line, trail cleared, and on round to the
+         corner the chip named, the same as driving there. 'instant' rather
+         than 'auto' because the page sets scroll-behavior: smooth and 'auto'
+         defers to it. */
       window.scrollTo({ top: top, behavior: 'instant' });
-      heading = null;   // face up the new road rather than sweeping round to it
+      lapRun = { from: 0, to: Math.min(1, Math.max(0, top / maxScroll)), t0: performance.now(), ms: 1100 };
       schedule();
     });
 
@@ -901,6 +925,12 @@
     }
 
     window.addEventListener('scroll', schedule, { passive: true });
+
+    // Touching the page during the run out hands the car back to the scroll,
+    // rather than leaving it driving somewhere the page no longer is.
+    ['wheel', 'touchstart', 'keydown'].forEach(function (ev) {
+      window.addEventListener(ev, function () { lapRun = null; }, { passive: true });
+    });
 
     var resizeTimer;
     function remeasure() {
