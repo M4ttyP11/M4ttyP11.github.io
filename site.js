@@ -557,3 +557,334 @@
     }
   });
 })();
+
+/* =========================================================================
+   Circuit view
+
+   Scroll position drives a lap. The corner dots are placed on real corners
+   of the path in the markup, and their position along the lap is found once
+   by walking a lookup table of sampled points. Scroll is then mapped through
+   those corners piecewise, so the current point is exactly on a dot when its
+   section reaches the top of the viewport, whatever the section heights are.
+   Reaching the footer completes the lap.
+
+   The car does not move. It sits at the SVG origin pointing up the screen,
+   and the track group takes the inverse transform, so the circuit slides and
+   turns underneath it: a window onto the part of the lap you are in rather
+   than the whole map.
+   ========================================================================= */
+
+(function () {
+  var root = document.getElementById('circuit');
+  if (!root) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  var path = document.getElementById('circuitPath');
+  var line = document.getElementById('circuitLine');
+  var win = document.getElementById('circuitWindow');
+  var world = document.getElementById('circuitWorld');
+  var label = document.getElementById('circuitLabel');
+  var next = document.getElementById('circuitNext');
+  var nextName = document.getElementById('circuitNextName');
+  var dots = Array.prototype.slice.call(document.querySelectorAll('#circuitDots circle'));
+  if (!path || !path.getTotalLength || !dots.length) return;
+
+  var STEPS = 900;
+  // How much road is lit either side of the car, in track units. The frame is
+  // 84 units ahead of the car and 36 behind, so both run past its edges and
+  // the ends of the dash never show.
+  var WIN_AHEAD = 108;
+  var WIN_BACK = 60;
+  var total = 0;
+  var stops = [];
+  var keys = [];
+  var maxScroll = 1;
+  var ready = false;
+  var hovering = null;
+  var currentIndex = -1;
+  var nextIndex = -1;
+  // The lap is parked while a project dialog is open, and any remeasure that
+  // arrives meanwhile is held until it resumes.
+  var frozen = false;
+  var pendingMeasure = false;
+  // Heading in degrees, eased toward the tangent rather than snapped to it.
+  var heading = null;
+
+  // Under the mobile breakpoint the widget is display:none, and a hidden SVG
+  // can report a length of zero, so setup waits until it can measure.
+  function build() {
+    total = path.getTotalLength();
+    if (!total) return false;
+
+    var lut = [];
+    for (var i = 0; i <= STEPS; i++) lut.push(path.getPointAtLength(total * i / STEPS));
+
+    stops = dots.map(function (dot, idx) {
+      var cx = parseFloat(dot.getAttribute('cx'));
+      var cy = parseFloat(dot.getAttribute('cy'));
+      var best = 0, bestD = Infinity;
+      for (var i = 0; i <= STEPS; i++) {
+        var dx = lut[i].x - cx, dy = lut[i].y - cy, d = dx * dx + dy * dy;
+        if (d < bestD) { bestD = d; best = i; }
+      }
+      return {
+        dot: dot,
+        el: document.querySelector(dot.dataset.target),
+        name: dot.dataset.name,
+        // The first dot sits on the start/finish line, where the loop closes
+        // and the nearest sample could just as easily be the last one.
+        f: idx === 0 ? 0 : best / STEPS,
+        scroll: 0
+      };
+    });
+
+    // Both overlay layers trace the same circuit, so they take their geometry
+    // from the one copy in the markup.
+    var d = path.getAttribute('d');
+    line.setAttribute('d', d);
+    win.setAttribute('d', d);
+    return true;
+  }
+
+  function measure() {
+    maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+    var vh = window.innerHeight;
+    stops.forEach(function (s, i) {
+      if (i === 0 || !s.el) { s.scroll = 0; return; }
+      var abs = s.el.getBoundingClientRect().top + window.scrollY;
+      var top = abs - 80;
+      // The last section starts below the last scrollable pixel, so it never
+      // reaches the top of the viewport and its anchor pins to the bottom of
+      // the page. Anchor it to the moment it enters the viewport instead,
+      // which leaves the rest of the scroll free to close the lap.
+      if (top > maxScroll) top = abs - vh;
+      s.scroll = Math.min(1, Math.max(0, top / maxScroll));
+    });
+    // A short section can push two stops onto the same scroll value, and the
+    // last section usually starts below the last scrollable pixel so it never
+    // reaches the top of the viewport at all. Either would divide by zero in
+    // the mapping, so force the stops strictly apart and keep them under 1.
+    for (var i = 1; i < stops.length; i++) {
+      if (stops[i].scroll <= stops[i - 1].scroll) stops[i].scroll = stops[i - 1].scroll + 0.002;
+    }
+    // Held below 1 so there is always scroll left between the last corner and
+    // the line, otherwise the lap ends a corner short of finishing.
+    var cap = 0.985;
+    for (var j = stops.length - 1; j > 0; j--) {
+      if (stops[j].scroll > cap) stops[j].scroll = cap;
+      cap = stops[j].scroll - 0.002;
+    }
+    keys = stops.map(function (s) { return { s: s.scroll, f: s.f }; });
+    // The bottom of the page is the start/finish line, so the run from the
+    // last corner back round to it is the final stretch of scroll.
+    keys.push({ s: 1, f: 1 });
+  }
+
+  function lapAt(p) {
+    for (var i = 0; i < keys.length - 1; i++) {
+      var a = keys[i], b = keys[i + 1];
+      if (p <= b.s) {
+        var span = b.s - a.s;
+        return span > 0 ? a.f + (b.f - a.f) * ((p - a.s) / span) : b.f;
+      }
+    }
+    return 1;
+  }
+
+  function render() {
+    if (!ready || frozen) return;
+    var p = Math.min(1, Math.max(0, window.scrollY / maxScroll));
+    var f = lapAt(p);
+
+    // A dash of length L starting at distance a along the path, wrapping at
+    // the seam because the loop is closed.
+    var at = total * f;
+    var lit = WIN_BACK + WIN_AHEAD;
+    win.style.strokeDasharray = lit + ' ' + (total - lit);
+    win.style.strokeDashoffset = WIN_BACK - at;
+    // The accent only trails behind the car, and only as far as the lap has
+    // actually run, so nothing is lit at the start that has not been driven.
+    var back = Math.min(WIN_BACK, at);
+    line.style.strokeDasharray = back + ' ' + (total - back);
+    line.style.strokeDashoffset = back - at;
+
+    // The car is fixed at the origin pointing up the screen, so the world
+    // carries the inverse: put the current point at the origin, then turn its
+    // tangent to face up.
+    var a = path.getPointAtLength(at % total);
+    world.setAttribute('transform',
+      'rotate(' + (-90 - headingAt(at)).toFixed(2) + ') ' +
+      'translate(' + (-a.x).toFixed(2) + ' ' + (-a.y).toFixed(2) + ')');
+
+    var idx = 0;
+    for (var i = 0; i < stops.length; i++) if (p >= stops[i].scroll - 0.0005) idx = i;
+    // Crossing the line completes the lap, so start/finish takes the
+    // highlight back off the last corner.
+    if (f > 0.99) idx = 0;
+    if (idx !== currentIndex) {
+      currentIndex = idx;
+      stops.forEach(function (s, i) {
+        if (i === idx) s.dot.setAttribute('data-current', 'true');
+        else s.dot.removeAttribute('data-current');
+      });
+      if (!hovering) label.textContent = stops[idx].name;
+    }
+
+    // The chip names where you are going, so past the line it points at the
+    // first corner of the next lap rather than back at start/finish.
+    var nxt = (idx + 1) % stops.length;
+    if (nxt !== nextIndex) {
+      nextIndex = nxt;
+      nextName.textContent = stops[nxt].name;
+    }
+  }
+
+  /* Heading, smoothed twice over.
+
+     The tangent is measured as a chord across SAMPLE units either side of the
+     point rather than forward from it. A forward-only chord lags the corner
+     and shakes on the tight arcs, where the path curves inside its own
+     sample. The chord is then eased toward with a time constant, which takes
+     the step out of the two places the raw tangent jumps: the join between
+     two path segments, and the moment scroll stops mid-arc.
+
+     The ease is time-based, not a fixed fraction per frame. A fraction per
+     frame makes the turn take longer on a throttled tab, which is exactly
+     where the page is when it is not the front window.
+
+     Easing an angle needs the target unwrapped first, or a turn through
+     +/-180 runs the long way round: 179 to -179 is two degrees of road and
+     358 degrees of spin. */
+  var SAMPLE = 6;
+  var TAU = 90;     // ms to cover about two thirds of the remaining angle
+  var SNAP = 45;    // degrees; past this it is a jump, not a corner
+  var last = 0;
+
+  function headingAt(at) {
+    var b = path.getPointAtLength((at + SAMPLE) % total);
+    var c = path.getPointAtLength((at - SAMPLE + total) % total);
+    var target = Math.atan2(b.y - c.y, b.x - c.x) * 180 / Math.PI;
+    var now = performance.now();
+    var dt = Math.min(100, now - last);
+    last = now;
+    if (heading === null) { heading = target; return heading; }
+
+    while (target - heading > 180) target -= 360;
+    while (target - heading < -180) target += 360;
+    var delta = target - heading;
+    // Anchor clicks, a resize and the load remeasure all move the lap much
+    // further than a corner does. Easing those spins the world for a second
+    // before it catches up, so take them in one step.
+    if (Math.abs(delta) > SNAP) { heading = target; return heading; }
+    // Settled. Land exactly on the target so the strip is not left a
+    // hundredth of a degree short, asking for frames forever.
+    if (Math.abs(delta) < 0.02) { heading = target; return heading; }
+    heading += delta * (1 - Math.exp(-dt / TAU));
+    // Unwrapping is cumulative, so a heading left to run would drift a full
+    // turn per lap and keep going. The rotation is modular, so fold it back.
+    if (heading > 180) heading -= 360;
+    else if (heading < -180) heading += 360;
+    // Still turning, so keep the frames coming: scroll has stopped firing
+    // events by now and nothing else would ask for one.
+    schedule();
+    return heading;
+  }
+
+  var frame = 0;
+  function schedule() {
+    if (frame) return;
+    frame = requestAnimationFrame(function () { frame = 0; render(); });
+  }
+
+  dots.forEach(function (dot) {
+    dot.addEventListener('mouseenter', function () {
+      hovering = dot;
+      label.textContent = dot.dataset.name;
+    });
+    dot.addEventListener('mouseleave', function () {
+      hovering = null;
+      if (currentIndex > -1) label.textContent = stops[currentIndex].name;
+    });
+    dot.addEventListener('click', function () {
+      var el = document.querySelector(dot.dataset.target);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
+  /* In the garage.
+
+     A project dialog covers the page and locks the scroll, so the lap cannot
+     move while one is open. Rendering through it is worse than useless: the
+     dialog changes the page height, a remeasure lands, and the car jumps to a
+     different part of the circuit behind the dialog for no reason the visitor
+     can see. So freeze, hold any remeasure, and pick it up on close.
+
+     The freeze follows body.modal-open rather than the dialog itself. That
+     class is already how the page says a modal is up, and watching it keeps
+     this independent of the dialog code further up the file. */
+  function setFrozen(state) {
+    if (state === frozen) return;
+    frozen = state;
+    if (frozen) {
+      label.textContent = 'In the garage';
+      return;
+    }
+    if (pendingMeasure) { pendingMeasure = false; measure(); }
+    // Force the label and the chip to be written again, since the freeze took
+    // the label over and both are only written on a change.
+    currentIndex = -1;
+    nextIndex = -1;
+    render();
+  }
+
+  if (window.MutationObserver) {
+    new MutationObserver(function () {
+      setFrozen(document.body.classList.contains('modal-open'));
+    }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  }
+
+  next.addEventListener('click', function () {
+    var s = stops[nextIndex < 0 ? 1 % stops.length : nextIndex];
+    var el = s && document.querySelector(s.dot.dataset.target);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  function start() {
+    if (ready) return;
+    if (!build()) return;
+    ready = true;
+    measure();
+    render();
+    root.setAttribute('data-ready', 'true');
+  }
+
+  window.addEventListener('scroll', schedule, { passive: true });
+
+  var resizeTimer;
+  function remeasure() {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () {
+      if (!ready) { start(); return; }
+      if (frozen) { pendingMeasure = true; return; }
+      measure();
+      currentIndex = -1;
+      render();
+    }, 150);
+  }
+
+  window.addEventListener('resize', remeasure);
+
+  // Lazy images load as you scroll and change the page height under the
+  // mapping, which leaves the lap running behind the sections. Barely showed
+  // on the old minimap, obvious now the view is zoomed in.
+  if (window.ResizeObserver) new ResizeObserver(remeasure).observe(document.body);
+
+  // Images and the intro animation both change the page height, so measure
+  // again once everything has settled.
+  window.addEventListener('load', function () {
+    if (!ready) start();
+    setTimeout(function () { if (ready) { measure(); currentIndex = -1; render(); } }, 400);
+  });
+
+  start();
+})();

@@ -1487,3 +1487,198 @@ body.modal-open { overflow: hidden; }
 .carousel.is-single .carousel-count,
 .carousel.is-single .carousel-dots { display: none; }
 .carousel.is-empty { display: none; }
+
+/* ----------------------------- CIRCUIT STRIP ----------------------------
+   A tall window onto the circuit, fixed in the page gutter. The car is
+   static and the track moves under it, so this is a view from above the car
+   rather than a map of the whole lap. Hidden until JS has measured the page,
+   so a visitor without JS never sees a dead widget.
+   ------------------------------------------------------------------------ */
+
+.circuit {
+  position: fixed;
+  /* Takes the gutter it is given: as wide as fits beside the container, up to
+     380px, and down to whatever the 1280px breakpoint can spare. Then it sits
+     centred in that gutter, so it is clear of the body text at every width
+     without being pinned to it. */
+  --gutter: calc((100vw - var(--container)) / 2);
+  /* The last term keeps the strip inside the window: it is two and a half
+     times as tall as it is wide. */
+  --strip-w: min(380px, calc(var(--gutter) - 56px), 34vh);
+  right: calc((var(--gutter) - var(--strip-w)) / 2);
+  top: 50%;
+  z-index: 40;
+  width: var(--strip-w);
+  /* Off by default. It only earns its place where there is real gutter to
+     put it in, which is the min-width query at the end of this block. */
+  display: none;
+  opacity: 0;
+  translate: 0 -50%;
+  transform: translateY(10px);
+  pointer-events: none;
+  transition: opacity .4s ease, transform .4s ease, filter .4s ease;
+}
+
+.circuit[data-ready="true"] {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+/* No card, no border. The strip is a window, and the mask fades the road out
+   at both ends rather than a frame cutting it off. */
+.circuit-map {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 48 / 120;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 15%, #000 82%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 15%, #000 82%, transparent 100%);
+}
+
+/* The whole loop, faint, so parts of the circuit you are not on sweep past
+   rather than appearing out of nothing. */
+.circuit-kerb {
+  fill: none;
+  /* Not --border: in dark it is 15% lightness on a 4% ground and vanishes.
+     A translucent grey holds the same weight in both themes. */
+  stroke: hsl(var(--muted-foreground) / .18);
+  stroke-width: 4.2;
+  stroke-linecap: round;
+}
+
+/* The road around the car. Cut to a window with stroke-dasharray in site.js,
+   which is what keeps the distant parts of the loop faint. */
+.circuit-window {
+  fill: none;
+  stroke: hsl(var(--muted-foreground) / .55);
+  stroke-width: 4.2;
+  stroke-linecap: butt;
+}
+
+/* The lap driven so far, trailing behind the car. Also dashed in site.js. */
+.circuit-line {
+  fill: none;
+  stroke: hsl(var(--accent));
+  stroke-width: 4.2;
+  stroke-linecap: butt;
+  transition: stroke .3s ease;
+}
+
+.circuit-sf {
+  stroke: hsl(var(--foreground));
+  stroke-width: .9;
+  stroke-linecap: round;
+}
+
+/* Apex markers, not map pins. The road is 4.2 units across, so anything much
+   over a unit reads as a hole punched in the track. Radii are set here rather
+   than in the markup, which still carries the minimap's. */
+.circuit-dots circle {
+  fill: hsl(var(--muted-foreground));
+  stroke: none;
+  cursor: pointer;
+  r: 1.1;
+  transition: fill .2s ease, r .2s ease;
+}
+
+.circuit-dots circle:hover { fill: hsl(var(--accent)); r: 1.7; }
+
+.circuit-dots circle[data-current="true"] {
+  fill: hsl(var(--accent));
+  r: 1.7;
+}
+
+.circuit-car { color: hsl(var(--foreground)); }
+.circuit-car path {
+  fill: currentColor;
+  stroke: hsl(var(--background));
+  stroke-width: .18;
+  paint-order: stroke;   /* keeps the car readable when it sits on a dot */
+}
+
+/* The still target. The dots are the precise way to jump to a section, but
+   they slide and turn with the track, so this names the next corner and takes
+   you there without having to chase anything. */
+.circuit-next {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: .4rem;
+  width: 100%;
+  margin: 0 0 .45rem;
+  padding: .3rem .55rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: 999px;
+  background: hsl(var(--card) / .72);
+  backdrop-filter: blur(6px);
+  font-family: var(--mono);
+  font-size: .62rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color .2s ease, color .2s ease;
+}
+
+.circuit-next-k { color: hsl(var(--muted-foreground) / .8); }
+.circuit-next-v {
+  color: hsl(var(--foreground));
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.circuit-next:hover { border-color: hsl(var(--accent) / .6); }
+.circuit-next:hover .circuit-next-v { color: hsl(var(--accent)); }
+
+/* The strip is only 114px wide from 1280px up to 1480px, where the gutter is
+   fixed, and grows from there. Below about 1700px the two halves of the chip
+   do not fit on one line, so the label goes above the name and the name gets
+   the full width instead of an ellipsis. */
+@media (max-width: 1700px) {
+  .circuit-next {
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    /* "MAJOR PROJECTS" measures 94.4px at this size, against 94.4px of inside
+       width in a 114px strip, so the side padding comes in to give it room. */
+    padding-inline: .3rem;
+    border-radius: var(--radius-sm);
+    line-height: 1.4;
+  }
+}
+
+/* The car is in the garage while a project dialog is open. The strip stays
+   in place, dimmed and inert: the lap has not moved, so hiding it would read
+   as a failure rather than a pause. Specificity beats the [data-ready] rule
+   that turns the strip on. */
+body.modal-open .circuit[data-ready="true"] {
+  opacity: .3;
+  filter: saturate(.25);
+  pointer-events: none;
+}
+
+.circuit-label {
+  margin: .3rem 0 0;
+  font-family: var(--mono);
+  font-size: .64rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The strip needs gutter of its own, so it appears only once the page is wide
+   enough to give it some and the container is pulled in to leave room. Below
+   that it would sit on top of the body text. */
+@media (min-width: 1280px) {
+  :root { --container: min(1140px, calc(100vw - 340px)); }
+  .circuit { display: block; }
+}
+
+/* A world that rotates under you is far more motion than a dot on a map. */
+@media (prefers-reduced-motion: reduce) { .circuit { display: none; } }

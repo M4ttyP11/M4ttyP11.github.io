@@ -512,6 +512,63 @@
   </div>
 </footer>
 
+<!-- ========================= CIRCUIT MINIMAP =======================
+     Decoration plus a shortcut: scroll position drives a car around a lap,
+     and the corner dots jump to their section. The real navigation is the
+     nav above, so this is aria-hidden and only appears once JS has measured
+     the page. Desktop only, and it stays off under reduced motion.
+     ================================================================ -->
+<aside class="circuit" id="circuit" aria-hidden="true">
+  <!-- A window onto the circuit around your current position. The car is fixed
+       at the SVG origin pointing up the screen, and #circuitWorld carries the
+       inverse transform, so the track slides and turns beneath it. The viewBox
+       is in track units, so the origin sits two thirds down the strip and most
+       of what you see is the road ahead.
+
+       Three track layers, all the same geometry: the whole loop faintly, so
+       distant parts of the circuit sweep past; a bright window of road around
+       the car, cut with stroke-dasharray so those distant parts stay faint;
+       and the lap driven so far in accent. site.js copies the path data onto
+       the other two at build time rather than the markup carrying it three
+       times. -->
+  <!-- The corner dots move with the track, so they are awkward to hit. This
+       chip holds still, names the corner you are heading for, and goes to it.
+       Not focusable: the strip is aria-hidden and the nav above is the real
+       keyboard route to every section. -->
+  <button class="circuit-next" id="circuitNext" type="button" tabindex="-1">
+    <span class="circuit-next-k">Next</span>
+    <span class="circuit-next-v" id="circuitNextName">Education</span>
+  </button>
+
+  <svg class="circuit-map" id="circuitMap" viewBox="-24 -84 48 120" role="presentation" focusable="false"
+       preserveAspectRatio="xMidYMid meet">
+    <g id="circuitWorld">
+      <path class="circuit-kerb" id="circuitPath"
+            d="M 54.75 150 L 161.75 150 A 32 32 0 0 0 184.37 140.63 L 197 128 A 16.54 16.54 0 0 0 191.24 100.86 L 178.56 95.99 A 16.64 16.64 0 0 1 174.75 67 L 180.41 62.88 A 16 16 0 0 0 176.34 34.86 L 150.01 25.54 A 30 30 0 0 0 129.99 25.54 L 97.85 36.92 A 23.27 23.27 0 0 0 84 67.5 L 86.22 73.06 A 16 16 0 0 1 71.37 95 L 54 95 A 24 24 0 0 0 30 119 L 30 125.25 A 24.75 24.75 0 0 0 54.75 150 Z"/>
+      <path class="circuit-window" id="circuitWindow"/>
+      <path class="circuit-line" id="circuitLine"/>
+      <line class="circuit-sf" x1="54.75" y1="143" x2="54.75" y2="157"/>
+
+      <g class="circuit-dots" id="circuitDots">
+        <circle data-target="#top"        data-name="Start/finish"   cx="54.75" cy="150" r="4.6"/>
+        <circle data-target="#education"  data-name="Education"      cx="173.99" cy="147.56" r="4.6"/>
+        <circle data-target="#major"      data-name="Major projects" cx="201.48" cy="112.87" r="4.6"/>
+        <circle data-target="#projects"   data-name="Other work"     cx="186.84" cy="47.64" r="4.6"/>
+        <circle data-target="#experience" data-name="Placements"     cx="84.41" cy="49.26" r="4.6"/>
+        <circle data-target="#contact"    data-name="Contact"        cx="37.03" cy="102.03" r="4.6"/>
+      </g>
+    </g>
+
+    <!-- Drawn in track units, so it is a car-sized car: the road is 4.2 units
+         across, call that a 12m track, which puts a 2m by 4.6m car at roughly
+         0.7 by 1.6. Nose along +x, and the group turns it to face up. -->
+    <g class="circuit-car" id="circuitCar" transform="rotate(-90)">
+      <path d="M .82 0 L .66 .3 L .1 .36 L -.42 .36 Q -.8 .36 -.8 .1 L -.8 -.1
+               Q -.8 -.36 -.42 -.36 L .1 -.36 L .66 -.3 Z"/>
+    </g>
+  </svg>
+  <p class="circuit-label" id="circuitLabel">Start/finish</p>
+</aside>
 <!-- Project detail dialog. Filled from the real pages under /projects/, which
      stay linkable on their own. Without JS, or if the fetch fails, every link
      that opens this just navigates to that page instead. -->
