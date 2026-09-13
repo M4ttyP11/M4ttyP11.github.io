@@ -11,8 +11,10 @@
 <meta property="og:description" content="Final-year MEng Aeronautical &amp; Astronautical Engineering. F1 lap-time simulation, CFD, and experimental aerodynamics.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://mathiaspotter.co.uk/">
-<!-- TODO: add assets/images/og-preview.jpg (1200x630), then uncomment
-<meta property="og:image" content="https://mathiaspotter.co.uk/assets/images/og-preview.jpg"> -->
+<meta property="og:image" content="https://mathiaspotter.co.uk/assets/images/og-preview.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 
 <link rel="canonical" href="https://mathiaspotter.co.uk/">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
@@ -28,6 +30,10 @@
 
 <script>
   (function () {
+    // First, so the .reveal hidden state only applies when scripts run. Without
+    // JS nothing would ever add .in, and the page would stay blank.
+    document.documentElement.classList.add('js');
+
     var t = localStorage.getItem('theme');
     if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     document.documentElement.dataset.theme = t;
@@ -90,10 +96,6 @@
   <div class="container hero-grid">
 
     <div class="hero-text">
-      <span class="badge">
-        <span class="dot"></span> Available for 2027 graduate roles
-      </span>
-
       <h1>Mathias<br>Potter</h1>
 
       <p class="hero-role">Aerodynamics &amp; Motorsport Engineering</p>
@@ -251,65 +253,83 @@
 
     <!-- ---------------------- 1. GDP ------------------------------- -->
     <article class="paper reveal">
-      <span class="pill">Group Design Project</span>
-      <h3 class="paper-title">MotoGP Cornering Aerodynamics</h3>
-      <p class="paper-meta">Final-year Group Design Project · Self-proposed · 2026–27</p>
-      <p class="paper-lead">
-        Motorcycle aerodynamics at 45–60° lean, the regime where a bike spends a large portion of its
-        lap time and one largely absent from open literature. I proposed the project,
-        secured approval for 2026/27, and lead the six-person team delivering it.
-      </p>
-      <div class="tags">
-        <span>Wind tunnel</span><span>CFD</span><span>Vehicle aerodynamics</span>
+      <div class="paper-body">
+        <span class="pill">Group Design Project</span>
+        <h3 class="paper-title">MotoGP Cornering Aerodynamics</h3>
+        <p class="paper-meta">Final-year Group Design Project · Self-proposed · 2026–27</p>
+        <p class="paper-lead">
+          Motorcycle aerodynamics at 45–60° lean, the regime where a bike spends a large portion of its
+          lap time and one largely absent from open literature. I proposed the project,
+          secured approval for 2026/27, and lead the six-person team delivering it.
+        </p>
+        <div class="tags">
+          <span>Wind tunnel</span><span>CFD</span><span>Vehicle aerodynamics</span>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="projects/motogp-cornering-aerodynamics.html">
+            Read the full project
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+          </a>
+        </div>
       </div>
-      <div class="hero-actions">
-        <a class="btn btn-primary" href="projects/motogp-cornering-aerodynamics.html">
-          Read the full project
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
-        </a>
+      <div class="paper-thumb">
+        <img src="assets/images/gdp-model.webp" alt="CAD of the 50%-scale MotoGP wind tunnel model with rider"
+             loading="lazy" onerror="this.parentElement.remove()">
       </div>
     </article>
 
     <!-- ---------------------- 2. IRP ------------------------------- -->
     <article class="paper reveal">
-      <span class="pill">Individual research project</span>
-      <h3 class="paper-title">Retroreflective PIV for Flow Measurement Around a Thick Aerofoil with a Gurney Flap</h3>
-      <p class="paper-meta">University of Southampton · Submitted May 2026</p>
-      <p class="paper-lead">
-        A feasibility study of retroreflective particle image velocimetry as an
-        alternative to conventional laser-sheet PIV, tested in a water tunnel across
-        five angles of attack and five speeds. Awarded a first.
-      </p>
-      <div class="tags">
-        <span>PIV</span><span>Water tunnel</span><span>Experimental methods</span>
+      <div class="paper-body">
+        <span class="pill">Individual research project</span>
+        <h3 class="paper-title">Retroreflective PIV for Flow Measurement Around a Thick Aerofoil with a Gurney Flap</h3>
+        <p class="paper-meta">University of Southampton · Submitted May 2026</p>
+        <p class="paper-lead">
+          A feasibility study of retroreflective particle image velocimetry as an
+          alternative to conventional laser-sheet PIV, tested in a water tunnel across
+          five angles of attack and five speeds. Awarded a first.
+        </p>
+        <div class="tags">
+          <span>PIV</span><span>Water tunnel</span><span>Experimental methods</span>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="projects/retroreflective-piv.html">
+            Read the full project
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+          </a>
+        </div>
       </div>
-      <div class="hero-actions">
-        <a class="btn btn-primary" href="projects/retroreflective-piv.html">
-          Read the full project
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
-        </a>
+      <div class="paper-thumb">
+        <img src="assets/images/piv-velocity-field.webp" alt="Velocity field around the thick aerofoil with a Gurney flap, measured with retroreflective PIV"
+             loading="lazy" onerror="this.parentElement.remove()">
       </div>
     </article>
 
     <!-- ---------------------- 3. LAP SIM --------------------------- -->
     <article class="paper reveal">
-      <span class="pill">Self-directed</span>
-      <h3 class="paper-title">F1 Lap-Time Simulator &amp; Setup Optimiser</h3>
-      <p class="paper-meta">Python · NumPy, SciPy, FastF1 · Summer 2026</p>
-      <p class="paper-lead">
-        A quasi-steady-state lap-time simulator correlated against real Formula 1
-        telemetry. Judged on RMS error across the full speed trace rather than lap
-        time alone, it recovers the correct setup direction per circuit from track
-        geometry.
-      </p>
-      <div class="tags">
-        <span>Python</span><span>Vehicle dynamics</span><span>Optimisation</span>
+      <div class="paper-body">
+        <span class="pill">Self-directed</span>
+        <h3 class="paper-title">F1 Lap-Time Simulator &amp; Setup Optimiser</h3>
+        <p class="paper-meta">Python · NumPy, SciPy, FastF1 · Summer 2026</p>
+        <p class="paper-lead">
+          A quasi-steady-state lap-time simulator correlated against real Formula 1
+          telemetry. Judged on RMS error across the full speed trace rather than lap
+          time alone, it recovers the correct setup direction per circuit from track
+          geometry.
+        </p>
+        <div class="tags">
+          <span>Python</span><span>Vehicle dynamics</span><span>Optimisation</span>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="projects/f1-lap-time-simulator.html">
+            Read the full project
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+          </a>
+        </div>
       </div>
-      <div class="hero-actions">
-        <a class="btn btn-primary" href="projects/f1-lap-time-simulator.html">
-          Read the full project
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
-        </a>
+      <div class="paper-thumb">
+        <img src="assets/images/correlation-plot.webp" alt="Simulated speed trace overlaid on real F1 telemetry for the Monza pole lap"
+             loading="lazy" onerror="this.parentElement.remove()">
       </div>
     </article>
 

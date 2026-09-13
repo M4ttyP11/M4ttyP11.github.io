@@ -946,3 +946,101 @@ Verified in the Orca browser: clicking the chip at the foot lands the page at
 y=1201 and the trail passes through intermediate lengths (80, then 107 of the
 final 108.2 units) rather than snapping. Frame sampling is throttled in a
 background tab, so the intermediate count is not meaningful, only the values.
+
+## 2026-09-13, reveal content no longer hidden without JS (brief item 1)
+
+`.reveal` was `opacity: 0` unconditionally and only `site.js` adds `.in`, so
+with scripts off the home page body stayed invisible.
+
+- `index.html` head script: adds `.js` to `<html>` as its first statement,
+  before the `localStorage` read that can throw.
+- `style.css`: the hidden state (`opacity: 0`, `translate: 0 18px`) and `.in`
+  now sit under `.js .reveal`; the transition stays on bare `.reveal`. The
+  reduced-motion override follows the same selector and no longer sets
+  `transform: none`, which at the higher specificity would have killed card
+  hover lifts.
+
+Verified in the Orca browser (no-store server): with `.js` removed and `.in`
+stripped, all 18 reveals compute opacity 1; with `.js`, they are 0 until
+observed, and scrolling to half page still reveals them (11 of 18 in).
+Project pages have no `.reveal`, so no change there. Not committed.
+
+## 2026-09-13, circuit strip fades at its sides too (brief item 2, on trial)
+
+`.circuit-map` masked top and bottom only, so bends were sliced off at the
+strip's left and right edges. `style.css` now stacks a second, horizontal
+gradient (transparent to black over 16% each side) on the mask and intersects
+the two (`mask-composite: intersect`, `-webkit-mask-composite: source-in`), so
+corners fade on both axes.
+
+Verified in the Orca browser at 1929px wide: strip displayed, computed mask
+shows both gradients with `intersect`. Open in a tab at
+`http://127.0.0.1:8765/index.html#projects` (no-store server) for Matty to
+judge. Open: Matty has not decided whether to keep it. Not committed.
+
+## 2026-09-13, circuit side fade kept
+
+Matty viewed item 2 in Orca and prefers it. The horizontal mask stays.
+
+## 2026-09-13, link preview images (brief item 3)
+
+No page had an `og:image`, so shared links showed a text-only card. Matty chose
+a name card for the home page and a figure card where a project has a figure.
+
+- `assets/images/og-preview.jpg`: dark-theme name card (name, role, degree,
+  URL, the site's circuit outline in accent). Also used by CubeSat, UAV and
+  Formula Student until they have photos.
+- `og-f1-lap-time-simulator.jpg`, `og-retroreflective-piv.jpg`,
+  `og-motogp-cornering-aerodynamics.jpg`: title, one-line summary and the
+  page's own figure (correlation plot, velocity field, GDP model).
+- All 1200x630 JPEG, about 80 to 95 KB. Rendered from HTML with headless Edge
+  by a script in the session scratchpad (`og/build.py`), not in the repo.
+- `index.html` and all six project pages: `og:image` plus width, height and
+  `twitter:card summary_large_image` after `og:url`. The home TODO comment is
+  gone.
+
+Open: regenerate the CubeSat, UAV and Formula Student cards once Matty adds
+their photos. Not committed.
+
+## 2026-09-13, major project cards get a figure (brief item 4)
+
+The three `.paper` cards were text only and about 40% empty on the right at
+desktop width.
+
+- `index.html`: each card's existing content is wrapped in `.paper-body`, and a
+  `.paper-thumb` follows it holding the project's own figure: `gdp-model.webp`
+  (MotoGP), `piv-velocity-field.webp` (PIV), `correlation-plot.webp` (lap sim).
+  Lazy loaded, with `onerror` removing the thumb if the image is missing.
+- `style.css`: `.paper:has(.paper-thumb)` is a two-column grid (text, then a
+  column of `minmax(220px, 36%)`). The figure sits in a white 4:3 panel in
+  both themes, since all three figures are drawn on white. At 760px and below
+  the card is one column with the figure on top at 16:10. If the thumb is
+  removed, `:has()` stops matching and the card falls back to the old layout.
+
+Verified in the Orca browser at 2279px: all three cards are grids of 638 +
+384 px, thumbs 384x288, images loaded. At 390px (an iframe on the page, since
+Orca's viewport cannot be resized): one column, figure above the text at
+297x186, no horizontal overflow. Headless Edge screenshots were no use here,
+they capture the intro curtain and the full-height hero. Not committed.
+
+## 2026-09-13, hero status badge removed
+
+Matty felt the "Available for 2027 graduate roles" pill was thrown in.
+
+- `index.html`: removed the `.badge` span from `.hero-text`, so the `h1` is now
+  its first child and takes the first intro stagger delay.
+- `style.css`: removed the `.badge` and `.dot` rules and dropped `.badge` from
+  the shared tag/pill selector. Nothing else used either class. Availability
+  is still stated in the contact section sub-heading. Not committed.
+
+## 2026-09-13, brief items 1 to 4 pushed to main
+
+Matty asked for the current work on main. Committed on
+`M4ttyP11/site-polish` and pushed as a fast-forward to `origin/main` (the
+branch was level with main, so nothing to merge), and pushed the branch too.
+The commit also carries a change made outside this session: the hero
+"Available for 2027 graduate roles" badge removed from `index.html` along with
+its `.badge`/`.dot` CSS. `.claude/BRIEF.md` left untracked.
+
+Open: the main checkout at `C:/Users/Matty/orca/M4ttyP11.github.io` still
+sits on the old commit with its own uncommitted `.claude/WORKLOG.md` edit.
