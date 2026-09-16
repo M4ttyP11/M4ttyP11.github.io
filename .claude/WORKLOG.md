@@ -1044,3 +1044,67 @@ its `.badge`/`.dot` CSS. `.claude/BRIEF.md` left untracked.
 
 Open: the main checkout at `C:/Users/Matty/orca/M4ttyP11.github.io` still
 sits on the old commit with its own uncommitted `.claude/WORKLOG.md` edit.
+
+## 2026-09-15, projects layout trial, steps 1 and 2
+
+Matty wants to try: the three major projects side by side on the home page,
+other work removed from it, a "View all projects" button to a new page, and
+projects opening in a pop-up on that page.
+
+Plan: (1) home page layout; (2) `projects/index.html` listing all six;
+(3) cards on that page open a `<dialog>` with summary, figure and a link to the
+full write-up, deep-linkable by hash; (4) once Matty keeps it, update the nav
+and back links on the six project pages, the sitemap, and the README.
+
+Done so far:
+- `index.html`: `#major` papers wrapped in `.major-grid`, a centred
+  `.major-actions` "View all projects" button below. `#projects` section and its
+  circuit dot removed. Nav "Other work" is now "All projects" (`projects/`).
+  `#experience` is now `section-alt` and `#contact` plain, so backgrounds still
+  alternate.
+- `style.css`: `.major-grid` (3 columns, 1 below 960px), each paper a flex
+  column with the figure on top at 16:10 and buttons pinned level at the foot.
+  `.card-img.is-figure` for white-ground figures in card image slots.
+- `projects/index.html`: new page, project-page chrome, two `h2` groups (major,
+  other work) of `.card` links to the existing pages. No dialog yet.
+
+Verified in Orca at 1427px: three 349px cards, 805px tall, buttons level, dot
+count 5, section backgrounds alternate. Projects page: six cards, out-lap strip
+built with 3 markers; the three other-work images are missing (known, brief 5).
+Open: cards are tall because leads are long, worth shortening; mobile not
+checked; steps 3 and 4. Not committed.
+
+## 2026-09-16, hero contact links are icons now
+
+Matty's feedback on the home page: the selectable items in `.hero-meta` should
+be images, not words, and the front page should carry as few words as it can.
+
+- `index.html`: LinkedIn, GitHub and Email are inline SVG marks in 38px square
+  buttons, with `aria-label` and `title` carrying the name. The three middle
+  dot separators are gone; "Southampton, UK" stays as text.
+- `style.css`: `.hero-meta a` is an icon button matching the theme toggle's
+  size, with the card background, a border, and a ring plus lift on hover.
+  `.hero-where` keeps a small gap before the location.
+
+Saved the wider preference as an auto-memory: prefer icons, figures and numbers
+over labels on the home page, and offer to cut copy rather than add it.
+Not committed.
+
+## 2026-09-16, home page nav bar removed, theme switch kept
+
+Matty: the fixed top bar breaks the flow of the page, since it lets you skip
+past everything, so it goes. He asked to keep the dark/light switch.
+
+- `index.html`: the whole `<nav class="nav">` block is gone. In its place a
+  `.theme-toggle.theme-float` button with the same id, so `site.js` still wires
+  it up. `site.js` guards its nav code with `if (nav && navToggle && navLinks)`,
+  so nothing else breaks.
+- `style.css`: `.theme-float` is fixed at the bottom left, 38px square, blurred
+  behind, at 75% opacity until hover. Matty asked for it away from the top once
+  it was on its own; bottom left keeps it clear of the circuit strip on the
+  right and reachable from anywhere on the page.
+- The circuit strip still jumps between sections on desktop, and the
+  "View all projects" button is the route to the projects page.
+
+The six project pages keep their nav bar: they need a route back, and Matty's
+feedback was about the home page. Not committed.

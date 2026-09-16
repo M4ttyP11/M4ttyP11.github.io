@@ -163,6 +163,20 @@ blockquote {
 [data-theme="light"] .moon,
 [data-theme="dark"]  .sun { display: none; }
 
+/* Home page: the theme switch with no bar around it. Bottom left, out of the
+   reading path and clear of the circuit strip down the right, and reachable
+   from anywhere on the page rather than only at the top. */
+.theme-float {
+  position: fixed; z-index: 50;
+  bottom: 1.5rem;
+  left: 1.5rem;
+  width: 38px; height: 38px;
+  backdrop-filter: saturate(180%) blur(12px);
+  opacity: .75;
+  transition: background .15s, border-color .15s, opacity .15s;
+}
+.theme-float:hover { opacity: 1; }
+
 /* The burger only exists below the breakpoint; above it the links are inline. */
 .nav-toggle { display: none; }
 .nav-toggle .close { display: none; }
@@ -330,8 +344,26 @@ blockquote {
   font-size: .875rem;
   color: hsl(var(--muted-foreground));
 }
-.hero-meta a { text-decoration: none; }
-.hero-meta a:hover { color: hsl(var(--foreground)); }
+/* Icon buttons, sized to the same 38px square as the theme toggle so the hero
+   has one control size. The link text lives in aria-label and title. */
+.hero-meta a {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 38px; height: 38px;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-sm);
+  background: hsl(var(--card));
+  color: hsl(var(--muted-foreground));
+  text-decoration: none;
+  transition: color .2s ease, border-color .2s ease, background .2s ease, transform .2s ease;
+}
+.hero-meta a:hover {
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--ring));
+  background: hsl(var(--muted));
+  transform: translateY(-1px);
+}
+.hero-meta a svg { display: block; }
+.hero-where { margin-left: .35rem; }
 
 .hero-portrait { position: relative; }
 .portrait-frame {
@@ -674,6 +706,36 @@ footer { border-top: 1px solid hsl(var(--border)); padding: 2rem 0; }
   .paper:has(.paper-thumb) { grid-template-columns: 1fr; }
   .paper-thumb { order: -1; aspect-ratio: 16 / 10; }
 }
+
+/* Home page: the three side by side, figure on top, buttons level along the
+   foot of the row whatever the length of each lead. Below 960px there is not
+   room for three, so they stack. */
+.major-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+.major-grid .paper,
+.major-grid .paper:has(.paper-thumb) {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+.major-grid .paper + .paper { margin-top: 0; }
+.major-grid .paper-thumb { order: -1; aspect-ratio: 16 / 10; }
+.major-grid .paper-body { display: flex; flex-direction: column; flex: 1; }
+.major-grid .paper-body > .pill { align-self: flex-start; }
+.major-grid .paper-title { font-size: clamp(1.15rem, 1.7vw, 1.35rem); }
+.major-grid .paper .hero-actions { margin-top: auto; padding-top: 1.5rem; }
+
+.major-actions { justify-content: center; margin-top: 2.5rem; }
+
+@media (max-width: 960px) {
+  .major-grid { grid-template-columns: 1fr; }
+}
+
+/* Figures drawn on white keep their whole frame in a card image slot. */
+.card-img.is-figure { object-fit: contain; background: #fff; }
 
 /* ----------------------------- ABSTRACT --------------------------------
    Was a <details> disclosure. It is the formal statement of the work, so it
