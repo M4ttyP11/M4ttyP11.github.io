@@ -1108,3 +1108,55 @@ past everything, so it goes. He asked to keep the dark/light switch.
 
 The six project pages keep their nav bar: they need a route back, and Matty's
 feedback was about the home page. Not committed.
+
+## 2026-09-16, committed and merged to main
+
+Matty asked to push and merge everything outstanding before starting a new idea.
+
+- Committed `a4eb127` "Cut the home page nav, icon the contact links, add a
+  projects page": the nav removal and floating theme switch, the icon contact
+  links, the `.major-grid` layout with "View all projects", and the new
+  `projects/index.html`. `.claude/BRIEF.md` went in with it, since WORKLOG.md
+  and settings.json were already tracked.
+- Pushed the branch, then fast-forwarded `main` on the remote with
+  `git push origin HEAD:main`. origin/main was already at `4e9fe4e`, so this
+  was a clean fast-forward and no merge commit was needed. Done that way
+  because `main` is checked out in another worktree and cannot be updated from
+  here. Local `main` in `C:\Users\Matty\orca\M4ttyP11.github.io` is still
+  stale at `310d271` and wants a `git pull`.
+- Open from the earlier brief and unchanged by this commit: the dialog
+  behaviour on the projects page (step 3), nav and back links on the six
+  project pages, sitemap and README (step 4), the three missing other-work
+  images, and mobile.
+
+Next idea, in its own worktree: a 3D version of the circuit strip.
+
+## 2026-09-17, hero "Major projects" button removed
+
+Matty, via design feedback in Orca: the button jumps past the page and breaks
+the flow, and people can scroll down to the projects. Same reasoning as the
+nav removal. `index.html`: the hero `.hero-actions` now holds only
+"Download CV". Verified in the Orca tab: no `#major` links left on the page.
+Not committed.
+
+## 2026-09-17, certificate thumbnail and lightbox on the F1 course card
+
+Matty supplied the Racetrack Dynamics certificate and asked for it small on
+the card, full size when clicked, using something from shadcnspace.com.
+That site's components are React and Radix, and this site has no build step,
+so the Dialog pattern is rebuilt on a native `<dialog>`: dark blurred overlay,
+bordered panel scaling up from 95%, close button top right. Escape and focus
+trapping come from the element.
+
+- `assets/images/rd-certificate.webp` (2800x2000, 265KB) and
+  `rd-certificate-thumb.webp` (720px, 37KB), from a 6MB PNG.
+- `index.html`: the course card is `.card-with-cert`, text left and a 220px
+  `.cert-thumb` link right, zoom icon on hover. `#certDialog` sits before
+  `site.js`. Without JS the thumbnail is a plain link to the full image.
+- `style.css`: LIGHTBOX block. Card stacks below 720px, animation off under
+  reduced motion.
+- `site.js`: generic `[data-lightbox]` handler, reusable for other images.
+  Backdrop click and the close button close it, focus returns to the link.
+
+Card verified in the Orca tab (thumb 220x158, loaded). Matty checked the
+dialog himself and is happy. Not committed.

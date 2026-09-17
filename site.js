@@ -16,6 +16,22 @@
     });
   }
 
+  // Image lightbox. A link with data-lightbox names the <dialog> it opens, and
+  // stays a plain link to the full image where <dialog> is not supported.
+  // Clicking the dimmed area outside the panel closes it, as does Escape.
+  document.querySelectorAll('[data-lightbox]').forEach(function (link) {
+    var dialog = document.querySelector(link.dataset.lightbox);
+    if (!dialog || typeof dialog.showModal !== 'function') return;
+    link.addEventListener('click', function (e) {
+      e.preventDefault();
+      dialog.showModal();
+    });
+    dialog.addEventListener('click', function (e) {
+      if (e.target === dialog || e.target.closest('[data-lightbox-close]')) dialog.close();
+    });
+    dialog.addEventListener('close', function () { link.focus(); });
+  });
+
   var nav = document.querySelector('.nav');
   var navToggle = document.getElementById('navToggle');
   var navLinks = document.getElementById('navLinks');
