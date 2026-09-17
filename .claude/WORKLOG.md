@@ -1160,3 +1160,35 @@ trapping come from the element.
 
 Card verified in the Orca tab (thumb 220x158, loaded). Matty checked the
 dialog himself and is happy. Not committed.
+
+## 2026-09-17, education "View CV" button removed
+
+Matty: not needed, the CV is already at the top. Removed the `.edu-actions`
+row from `#education` and its now-unused rule in `style.css`. The CV is still
+linked from the hero and the contact section. Not committed.
+
+## 2026-09-17, abstracts to the top, project-page boxes flattened
+
+Matty: move abstracts to the top of each project page, and drop the card
+within card look, shadcn style.
+
+- Only `f1-lap-time-simulator.html` and `retroreflective-piv.html` have an
+  abstract. It now opens the article as `section.abstract`: micro-label, text,
+  bottom rule, no box. `.abstract-block` rule replaced by `.abstract`.
+- Carousel: removed the slide padding, drop-shadow and inner fill, so the image
+  sits flush in one bordered frame instead of a card inside a card.
+- `.callout`: shadcn Alert style, one rounded border on card background, no
+  accent spine or muted fill.
+- Checked in headless Edge screenshots (PIV page). Not committed.
+
+## 2026-09-17, facts grid removed from project pages
+
+Matty, via design feedback: the Project / Institution / Submitted grid in
+`.proj-band` read as filler. Removed the `dl.proj-facts` from all six project
+pages and its CSS. The band now holds only the methods and tools tag row,
+padding cut to 1.25rem, divider above the tags gone. Not committed.
+
+## 2026-09-17, major projects intro line removed
+
+Matty: the "Each has its own page..." sub-line under "The three projects I'm
+proudest of" states the obvious. Removed from `index.html`. Not committed.

@@ -112,28 +112,6 @@
 
 <section class="proj-band">
   <div class="container">
-    <dl class="proj-facts">
-      <div>
-        <dt>Project</dt>
-        <dd>Self-directed</dd>
-      </div>
-      <div>
-        <dt>Period</dt>
-        <dd>Summer 2026</dd>
-      </div>
-      <div>
-        <dt>Built in</dt>
-        <dd>Python, from scratch</dd>
-      </div>
-      <div>
-        <dt>Validated against</dt>
-        <dd>Real Formula 1 telemetry</dd>
-      </div>
-      <div>
-        <dt>Circuits</dt>
-        <dd>Monza and the Hungaroring</dd>
-      </div>
-    </dl>
     <div class="proj-tools">
       <p class="micro-label">Methods and tools</p>
       <div class="tags">
@@ -148,6 +126,18 @@
   <div class="container">
 
     <article class="prose">
+
+      <section class="abstract" aria-labelledby="abstract-h">
+        <h2 class="micro-label" id="abstract-h">Abstract</h2>
+        <p>
+        I built a quasi-steady-state (QSS) lap-time simulator in Python and validated
+        it against real Formula 1 telemetry, matching lap time to within 1.25%,
+        though RMS error across the full speed trace, at 16.1 km/h, is the honest
+        measure. I then combined it with an optimiser which, given only a circuit's
+        geometry, independently chooses the right aerodynamic setup for that track.
+        Monza and the Hungaroring were optimised for comparison.
+        </p>
+      </section>
 
       <h2>What it does</h2>
       <p>
@@ -231,18 +221,6 @@
         is given to it. It is a useful check, because the two circuits sit at opposite
         ends of the downforce range and the right answers are already known.
       </p>
-
-      <h2>Abstract</h2>
-      <div class="abstract-block">
-        <p>
-        I built a quasi-steady-state (QSS) lap-time simulator in Python and validated
-        it against real Formula 1 telemetry, matching lap time to within 1.25%,
-        though RMS error across the full speed trace, at 16.1 km/h, is the honest
-        measure. I then combined it with an optimiser which, given only a circuit's
-        geometry, independently chooses the right aerodynamic setup for that track.
-        Monza and the Hungaroring were optimised for comparison.
-        </p>
-      </div>
 
     </article>
 
