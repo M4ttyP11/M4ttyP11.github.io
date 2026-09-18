@@ -1758,3 +1758,16 @@ project out lap, plus a straight, a corner and a named gantry. Comments in the
 header, the CAM block and the car block updated to the new numbers.
 
 Not committed.
+
+## 2026-09-18, committed and merged to main
+
+`b6c20f8`, one commit covering the four pieces above: the gantry sign as
+geometry, the page bands running under the strip, the opaque road base, and
+the higher camera with the wider road. Pushed to
+`origin/M4ttyP11/circuit-3d`, then `origin/main` fast forwarded to it, since
+main was two behind and this branch contained it.
+
+The local `main` in the parent checkout at `C:/Users/Matty/orca/
+M4ttyP11.github.io` is still on `65ba340`. It is checked out in that worktree
+so nothing here can move it: it needs a `git pull` there. GitHub Pages builds
+off `origin/main`, which is current.
