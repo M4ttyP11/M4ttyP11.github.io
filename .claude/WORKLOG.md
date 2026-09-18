@@ -1525,3 +1525,26 @@ appears on the first switch to 2D and the map drives normally, the 3D view
 comes back with its boards, its out lap tint and its ready flag, the chip
 lands back in the right parent, the page's right padding and the project nav
 follow, no overflow either way.
+
+## 2026-09-18, committed and merged to main
+
+Matty asked to push and merge. The sliders were made opt-in first: `?tune=1`
+puts them on the page and nothing else does, since the site is aimed at
+employers and a panel of dev sliders reads badly. `proto/` is committed, both
+files noindex, since they carry the rig the camera was found on.
+
+`9a5c521` "Add a 3D circuit view and a switch between it and the map":
+`circuit3d.js`, both prototypes, the strip CSS, the toggle and the script tag
+on all eight pages.
+
+Main had moved two commits ahead while this worktree ran, so the branch was
+rebased onto `65ba340` rather than merged. Three conflicts, all of them two
+sides appending to the same end of a file: the certificate dialog against the
+new script tag in `index.html`, the lightbox block against the 3D strip block
+in `style.css`, and both sides' entries in this log. All resolved by keeping
+both, in that order. `style.css` needed a brace of its own between the two
+blocks, since each side ended mid-rule and shared the closing one.
+
+Checked after the rebase: certificate lightbox opens and closes, both circuit
+views swap on the home page, a project page keeps its out lap and its tint, no
+overflow. Branch pushed and `main` fast-forwarded to `9a5c521`.
