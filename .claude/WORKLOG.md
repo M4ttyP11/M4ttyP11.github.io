@@ -1911,3 +1911,24 @@ icon fade .3s to .4s, and the no-View-Transitions colour cross-fade .45s to
 .7s with the class coming off at 760ms instead of 500ms. Caught mid-flight in
 a screenshot: the old theme still holding the far corner while the new one
 covers the rest.
+
+## 2026-09-18, motion layer committed and merged to main
+
+`aebd89a`, one commit covering all of it: the easing tokens, the pointer
+light, the transform-based card lift, the reactive detail pass, the animated
+theme switch, and the `ico-lead` class on the three leading button icons. The
+rewritten `.claude/BRIEF.md` for this worktree went in with it, it had been
+sitting uncommitted since the worktree was created.
+
+Pushed to `origin/M4ttyP11/professional-makeover`, then `origin/main` fast
+forwarded to it since main was level with the branch point. GitHub Pages
+builds off `origin/main`, so it is live.
+
+As before, the local `main` in the parent checkout at
+`C:/Users/Matty/orca/M4ttyP11.github.io` is behind and needs a `git pull`
+there, nothing here can move it.
+
+Still open from the original brief: the professional-makeover scope itself
+(visual restraint, content credibility, mechanics) has never been chosen, and
+the next motion piece discussed but not built is staggered scroll reveals
+plus a cross-fade between pages.
