@@ -389,6 +389,26 @@
 (function () {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
+  /* Two renderers over the same geometry and the same scroll mapping: the
+     flat map below, and the helicopter view in circuit3d.js. Either can be
+     up at any time and the button at the foot of the page swaps them, so the
+     choice is the reader's rather than a build-time one.
+
+     3D is the default where it loaded. A choice is remembered, and
+     ?circuit=2d or ?circuit=3d overrides both for that load without being
+     remembered, which keeps a link to one of them honest. */
+  var has3d = !!window.Circuit3D;
+  var flag = /[?&]circuit=(2d|3d)/.exec(location.search);
+
+  function stored() {
+    try { return localStorage.getItem('circuit-view'); } catch (e) { return null; }
+  }
+  function remember(m) {
+    try { localStorage.setItem('circuit-view', m); } catch (e) {}
+  }
+
+  var mode = !has3d ? '2d' : flag ? flag[1] : stored() === '2d' ? '2d' : '3d';
+
   /* ---------------------------- the component ---------------------------
      Takes a populated .circuit element. Parts are found by class, not id,
      so a generated strip and the hand-written one are interchangeable. */
@@ -408,6 +428,13 @@
     // rather than taken modulo, and nothing resets at the end.
     var closed = root.dataset.mode !== 'outlap';
 
+    // Swapping renderers moves the Next chip out of the map and back, so
+    // where it came from is kept rather than guessed at.
+    var dAttr = '';
+    var built2d = false;
+    var nextHome = next.parentNode, nextAfter = next.nextSibling;
+    var toggle = null, tuner = null;
+
     // How much road is lit either side of the car, in track units. The frame
     // is 84 units ahead of the car and 36 behind, so both run past its edges
     // and the ends of the dash never show.
@@ -425,6 +452,9 @@
     var heading = null;
     // A lap being run out under its own power rather than by the scroll.
     var lapRun = null;
+    // The band, where it is the renderer in use. Null means the flat strip
+    // is drawing instead.
+    var view = null;
 
     // Distance along the path, wrapped on a closed lap and clamped on an
     // open one, which is the only place the two shapes differ geometrically.
@@ -657,14 +687,99 @@
         };
       });
 
+      dAttr = path.getAttribute('d');
+      apply(mode);
+      mountToggle();
+      return true;
+    }
+
+    /* ------------------------------ the swap -----------------------------
+       Both renderers read the same path and the same scroll mapping, so a
+       swap is a matter of which one is on the page: everything measured
+       survives it. The flat map's furniture is laid down the first time it
+       is asked for rather than at load, since a reader who never leaves the
+       helicopter view never needs it. */
+    function build2d() {
+      if (built2d) return;
       // Every overlay layer traces the same track, so they take their
       // geometry from the one copy in the markup.
-      var d = path.getAttribute('d');
-      line.setAttribute('d', d);
-      win.setAttribute('d', d);
-
+      line.setAttribute('d', dAttr);
+      win.setAttribute('d', dAttr);
       furnish();
-      return true;
+      built2d = true;
+    }
+
+    function apply(m) {
+      if (m === '3d' && has3d) {
+        if (!view) view = window.Circuit3D.create({ d: dAttr, closed: closed });
+        if (view) {
+          // The mode retints the view, and the car's livery is read off it,
+          // so the tint has to land before the livery is read again.
+          if (root.dataset.mode) {
+            view.el.dataset.mode = root.dataset.mode;
+            view.refresh();
+          }
+          // The 3D view draws the road itself and needs none of the flat
+          // map's layers or furniture. The Next chip is the one part of the
+          // map that still earns its place there, so the same button moves
+          // across rather than a second one being written for it.
+          view.el.appendChild(next);
+          if (ready) view.el.setAttribute('data-ready', 'true');
+          document.documentElement.setAttribute('data-circuit', '3d');
+          // The camera is not settled, so the sliders it was found on come
+          // with it, but off the reader's path: ?tune=1 asks for them and
+          // nothing else shows them. The whole block goes when the numbers
+          // are decided.
+          if (!tuner && window.Circuit3D.tune && /[?&]tune=1/.test(location.search)) {
+            // A width change reflows the page, so the lap is remeasured too.
+            tuner = window.Circuit3D.tune({
+              onChange: function () { schedule(); remeasure(); }
+            });
+          }
+          if (tuner) tuner.el.hidden = false;
+          return '3d';
+        }
+      }
+
+      // Back to the flat map. The 3D view is disposed rather than hidden: it
+      // is the expensive one, and nothing about it is worth keeping warm.
+      if (view) { view.dispose(); view = null; }
+      if (tuner) tuner.el.hidden = true;
+      document.documentElement.removeAttribute('data-circuit');
+      if (nextAfter) nextHome.insertBefore(next, nextAfter);
+      else nextHome.appendChild(next);
+      build2d();
+      return '2d';
+    }
+
+    /* The switch itself, written here rather than into every page's markup,
+       since it only means anything where both renderers can run. It names
+       the view it will move to, not the one that is up. */
+    function mountToggle() {
+      if (!has3d || toggle) return;
+      toggle = document.createElement('button');
+      toggle.type = 'button';
+      toggle.className = 'circuit-toggle';
+      // The home page floats the theme switch in the same corner, so the
+      // pair sit side by side there and this one stands alone elsewhere.
+      if (document.querySelector('.theme-float')) toggle.dataset.pair = 'theme';
+      relabel();
+      toggle.addEventListener('click', function () {
+        mode = apply(mode === '3d' ? '2d' : '3d');
+        remember(mode);
+        relabel();
+        measure();
+        currentIndex = -1;
+        render();
+      });
+      document.body.appendChild(toggle);
+    }
+
+    function relabel() {
+      var to = mode === '3d' ? 'the flat map' : 'the view from above';
+      toggle.textContent = mode === '3d' ? '2D' : '3D';
+      toggle.title = 'Show ' + to;
+      toggle.setAttribute('aria-label', 'Show ' + to);
     }
 
     // Held below 1 so there is always scroll left between the last corner and
@@ -738,6 +853,14 @@
         s.dot.setAttribute('cx', n2(pt.x));
         s.dot.setAttribute('cy', n2(pt.y));
       });
+
+      // The band's boards are the same markers standing up beside the track,
+      // so they are placed from the same shares of the scroll.
+      if (view) {
+        view.setBoards(stops.map(function (s) {
+          return { name: s.name, f: s.f };
+        }));
+      }
     }
 
     function render() {
@@ -760,40 +883,49 @@
         }
       }
 
-      // A dash of length L starting at distance a along the path. On a
-      // closed lap the gap is the rest of the loop, so the dash wraps at the
-      // seam. On an open one the gap is made long enough that the pattern
-      // cannot repeat back onto the track.
       var d = total * f;
-      var lit = WIN_BACK + WIN_AHEAD;
-      var gap = closed ? total - lit : total * 2;
-      win.style.strokeDasharray = lit + ' ' + gap;
-      win.style.strokeDashoffset = WIN_BACK - d;
-      // Accent is the road already driven: it starts at the line and grows
-      // behind the car as the lap is run, so the lap fills in rather than
-      // dragging a tail of its own length around. Nothing ahead of the car is
-      // lit, and nothing is lit at the start that has not been driven.
-      var driven = Math.min(total, d);
-      line.style.strokeDasharray = driven + ' ' + (closed ? total - driven : total * 2);
-      line.style.strokeDashoffset = 0;
 
-      // The car is fixed at the origin pointing up the screen, so the world
-      // carries the inverse: put the current point at the origin, then turn
-      // its tangent to face up.
-      var a = at(d);
-      world.setAttribute('transform',
-        'rotate(' + (-90 - headingAt(d)).toFixed(2) + ') ' +
-        'translate(' + (-a.x).toFixed(2) + ' ' + (-a.y).toFixed(2) + ')');
+      if (view) {
+        /* The band draws the road, the car and the boards itself, from the
+           lap fraction alone. It asks for another frame while the car's body
+           lean is still settling, the way headingAt() does below for the
+           strip's turn. */
+        if (view.frame(f)) schedule();
+      } else {
+        // A dash of length L starting at distance a along the path. On a
+        // closed lap the gap is the rest of the loop, so the dash wraps at the
+        // seam. On an open one the gap is made long enough that the pattern
+        // cannot repeat back onto the track.
+        var lit = WIN_BACK + WIN_AHEAD;
+        var gap = closed ? total - lit : total * 2;
+        win.style.strokeDasharray = lit + ' ' + gap;
+        win.style.strokeDashoffset = WIN_BACK - d;
+        // Accent is the road already driven: it starts at the line and grows
+        // behind the car as the lap is run, so the lap fills in rather than
+        // dragging a tail of its own length around. Nothing ahead of the car is
+        // lit, and nothing is lit at the start that has not been driven.
+        var driven = Math.min(total, d);
+        line.style.strokeDasharray = driven + ' ' + (closed ? total - driven : total * 2);
+        line.style.strokeDashoffset = 0;
 
-      // Kerbs and barriers belong to the road they sit beside, so they dim
-      // with it once their corner is out of the lit window. Only the ones
-      // that change are touched, so a frame usually writes nothing here.
-      for (var r = 0; r < runs.length; r++) {
-        var far = !inWindow(runs[r].from, runs[r].to, d);
-        if (far === runs[r].far) continue;
-        runs[r].far = far;
-        if (far) runs[r].g.setAttribute('data-far', 'true');
-        else runs[r].g.removeAttribute('data-far');
+        // The car is fixed at the origin pointing up the screen, so the world
+        // carries the inverse: put the current point at the origin, then turn
+        // its tangent to face up.
+        var a = at(d);
+        world.setAttribute('transform',
+          'rotate(' + (-90 - headingAt(d)).toFixed(2) + ') ' +
+          'translate(' + (-a.x).toFixed(2) + ' ' + (-a.y).toFixed(2) + ')');
+
+        // Kerbs and barriers belong to the road they sit beside, so they dim
+        // with it once their corner is out of the lit window. Only the ones
+        // that change are touched, so a frame usually writes nothing here.
+        for (var r = 0; r < runs.length; r++) {
+          var far = !inWindow(runs[r].from, runs[r].to, d);
+          if (far === runs[r].far) continue;
+          runs[r].far = far;
+          if (far) runs[r].g.setAttribute('data-far', 'true');
+          else runs[r].g.removeAttribute('data-far');
+        }
       }
 
       var idx = 0;
@@ -938,6 +1070,7 @@
       measure();
       render();
       root.setAttribute('data-ready', 'true');
+      if (view) view.el.setAttribute('data-ready', 'true');
     }
 
     window.addEventListener('scroll', schedule, { passive: true });

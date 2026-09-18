@@ -1,0 +1,1182 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Circuit helicopter | Prototype</title>
+<meta name="robots" content="noindex">
+<style>
+/* Tokens copied from style.css so the band reads in the site's own colours. */
+:root {
+  --background:        0 0% 100%;
+  --foreground:        240 10% 4%;
+  --muted:             240 5% 96%;
+  --muted-foreground:  240 4% 46%;
+  --card:              0 0% 100%;
+  --border:            240 6% 90%;
+  --accent:            214 90% 36%;
+  --kerb:              0 72% 48%;
+  /* The worn line is darker than the road in daylight and lighter than it at
+     night, since a dark tint on a dark road is invisible. */
+  --worn:              0 0% 0% / .18;
+  --worn-deep:         0 0% 0% / .26;
+  --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --strip-w: 340px;
+}
+:root[data-theme="dark"] {
+  --background:        240 10% 4%;
+  --foreground:        0 0% 96%;
+  --muted:             240 6% 10%;
+  --muted-foreground:  240 5% 60%;
+  --card:              240 8% 6%;
+  --border:            240 5% 15%;
+  --accent:            214 90% 62%;
+  --kerb:              0 70% 55%;
+  --worn:              0 0% 100% / .05;
+  --worn-deep:         0 0% 100% / .08;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --background:        240 10% 4%;
+    --foreground:        0 0% 96%;
+    --muted:             240 6% 10%;
+    --muted-foreground:  240 5% 60%;
+    --card:              240 8% 6%;
+    --border:            240 5% 15%;
+    --accent:            214 90% 62%;
+    --kerb:              0 70% 55%;
+    --worn:              0 0% 100% / .05;
+    --worn-deep:         0 0% 100% / .08;
+  }
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font: 14px/1.45 var(--font);
+}
+/* Always this tall, so the scroll length slider shows on the scrollbar even
+   before Drive by scroll is on. */
+body { min-height: var(--page-h, 9000px); }
+
+.page {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 24px 16px;
+  color: hsl(var(--muted-foreground));
+}
+.page h1 { font-size: 16px; margin: 0 0 4px; color: hsl(var(--foreground)); }
+.page p { margin: 0; }
+
+/* The strip, where the flat map used to sit: fixed in the right gutter, two
+   and a half times as tall as it is wide. No card and no border, the mask
+   fades the world out on all four sides so it reads as a window rather than
+   a panel. */
+.band {
+  position: fixed;
+  right: 24px;
+  top: 50%;
+  translate: 0 -50%;
+  z-index: 1;
+  width: var(--strip-w);
+  height: calc(var(--strip-w) * 2.5);
+  max-height: 94vh;
+  overflow: hidden;
+  -webkit-mask-image:
+    linear-gradient(to bottom, transparent 0, #000 12%, #000 88%, transparent 100%),
+    linear-gradient(to right, transparent 0, #000 9%, #000 91%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to bottom, transparent 0, #000 12%, #000 88%, transparent 100%),
+    linear-gradient(to right, transparent 0, #000 9%, #000 91%, transparent 100%);
+  mask-composite: intersect;
+}
+.band svg { display: block; width: 100%; height: 100%; }
+/* From overhead there is no horizon and no sky: the ground plane covers the
+   whole frame, so filling it would put a slab of colour behind the strip
+   where the flat map had none. The verge carries the edge of the world
+   instead and the page shows through beyond it. */
+.ground { fill: none; }
+.horizon { display: none; }
+.road { fill: hsl(var(--muted-foreground) / .55); }
+.edge { fill: hsl(var(--foreground) / .7); }
+.apron { fill: hsl(var(--muted-foreground) / .3); }
+.verge { fill: hsl(var(--muted-foreground) / .16); }
+.rline { fill: hsl(var(--worn)); }
+.rubber { fill: hsl(var(--worn-deep)); }
+.kerb-a { fill: hsl(var(--kerb)); }
+.kerb-b { fill: hsl(0 0% 98%); }
+.flag { fill: hsl(0 0% 98%); }
+.wall-face { fill: hsl(var(--foreground) / .32); }
+.wall-top { fill: hsl(var(--foreground) / .5); }
+.board-panel { fill: hsl(var(--card)); stroke: hsl(var(--border)); stroke-width: .6; }
+.board-back { fill: hsl(var(--muted-foreground) / .45); }
+.board-post { fill: hsl(var(--muted-foreground) / .7); }
+.board-strip { fill: hsl(var(--muted-foreground) / .6); }
+.board.is-next .board-strip { fill: hsl(var(--accent)); }
+.board-text {
+  fill: hsl(var(--foreground));
+  font: 600 92px var(--font);
+  letter-spacing: -.5px;
+}
+.shadow { fill: hsl(0 0% 0% / .28); }
+.readout {
+  position: fixed; left: 52px; bottom: 18px;
+  font: 11px var(--mono);
+  color: hsl(var(--muted-foreground));
+}
+
+/* Tuning, tucked away: a small button in the band's corner opens the sliders
+   in a panel above it. */
+.tune {
+  position: fixed; left: 12px; bottom: 12px;
+  width: 28px; height: 28px;
+  display: grid; place-items: center;
+  padding: 0;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--card));
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+  opacity: .7;
+}
+.tune:hover, .tune[aria-expanded="true"] { opacity: 1; color: hsl(var(--foreground)); }
+.tune svg { width: 16px; height: 16px; }
+
+.panel {
+  position: fixed;
+  left: 12px;
+  bottom: 56px;
+  z-index: 2;
+  width: min(460px, calc(100vw - 24px));
+  max-height: calc(100vh - 80px);
+  overflow: auto;
+  padding: 14px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  background: hsl(var(--card) / .96);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 10px 30px -10px hsl(0 0% 0% / .4);
+}
+.panel[hidden] { display: none; }
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 16px;
+}
+.ctl { display: grid; grid-template-columns: 1fr auto; gap: 0 8px; align-items: center; }
+.ctl label { font-size: 12px; color: hsl(var(--muted-foreground)); }
+.ctl output { font: 12px var(--mono); }
+.ctl input[type=range] { grid-column: 1 / -1; width: 100%; margin: 2px 0; accent-color: hsl(var(--accent)); }
+
+.row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 12px; }
+.row button {
+  font: inherit; font-size: 12px;
+  padding: 5px 10px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--card));
+  color: inherit;
+  cursor: pointer;
+}
+.row button:hover { border-color: hsl(var(--muted-foreground)); }
+.row button[aria-pressed="true"] { background: hsl(var(--foreground)); color: hsl(var(--background)); }
+.stats { font: 11px var(--mono); color: hsl(var(--muted-foreground)); margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <h1>Circuit 3D prototype</h1>
+  <p>Helicopter camera over the home page track, in the side strip the flat map used to sit in.
+     The car is fixed on screen and the world turns under it. Not wired to the site.
+     Sliders are behind the button at the bottom left.</p>
+</div>
+
+<!-- Only here to be measured: the path data is copied from index.html. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <path id="src" d="M 108.25 150 L 161.75 150 A 32 32 0 0 0 184.37 140.63 L 197 128 A 16.54 16.54 0 0 0 191.24 100.86 L 178.56 95.99 A 16.64 16.64 0 0 1 174.75 67 L 180.41 62.88 A 16 16 0 0 0 176.34 34.86 L 150.01 25.54 A 30 30 0 0 0 129.99 25.54 L 97.85 36.92 A 23.27 23.27 0 0 0 84 67.5 L 86.22 73.06 A 16 16 0 0 1 71.37 95 L 54 95 A 24 24 0 0 0 30 119 L 30 125.25 A 24.75 24.75 0 0 0 54.75 150 L 108.25 150 Z"/>
+</svg>
+
+<div class="panel" id="panel" hidden>
+  <div class="grid" id="controls"></div>
+  <div class="row">
+    <button id="play" type="button" aria-pressed="true">Pause</button>
+    <button id="scrollMode" type="button" aria-pressed="false">Drive by scroll</button>
+    <button data-preset="heli" type="button">Helicopter</button>
+    <button data-preset="drone" type="button">Drone</button>
+    <button data-preset="chase" type="button">TV chase</button>
+    <button id="theme" type="button">Theme</button>
+    <button id="copy" type="button">Copy settings</button>
+  </div>
+  <div class="stats" id="stats"></div>
+</div>
+
+<div class="band" id="band">
+  <svg id="view" role="presentation">
+    <defs>
+      <!-- Fog: the ground fades into the page background toward the horizon.
+           Placed in user space each frame, since the horizon moves with pitch
+           and field of view. -->
+      <linearGradient id="fog" gradientUnits="userSpaceOnUse" x1="0" x2="0">
+        <stop offset="0" stop-color="hsl(var(--background))" stop-opacity="1"/>
+        <stop offset="1" stop-color="hsl(var(--background))" stop-opacity="0"/>
+      </linearGradient>
+      <filter id="soft" x="-20%" y="-50%" width="140%" height="200%">
+        <feGaussianBlur stdDeviation="1.5"/>
+      </filter>
+    </defs>
+    <rect class="ground" id="ground" x="0" width="100%"/>
+    <path class="verge" id="verge"/>
+    <path class="apron" id="apron"/>
+    <path class="road" id="road"/>
+    <path class="rline" id="rline"/>
+    <path class="rubber" id="rubber"/>
+    <path class="edge" id="edge"/>
+    <path class="kerb-a" id="kerbA"/>
+    <path class="kerb-b" id="kerbB"/>
+    <path class="flag" id="flag"/>
+    <path class="wall-face" id="wallFace"/>
+    <path class="wall-top" id="wallTop"/>
+    <g id="boards"></g>
+    <rect id="fogRect" x="0" width="100%" fill="url(#fog)"/>
+    <line class="horizon" id="horizon" x1="0" x2="100%"/>
+    <path class="shadow" id="shadow" filter="url(#soft)"/>
+    <g id="car"></g>
+  </svg>
+  <div class="readout" id="readout"></div>
+  <button class="tune" id="tune" type="button" aria-expanded="false" aria-controls="panel" title="Tune the camera">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+      <path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/>
+      <circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>
+    </svg>
+  </button>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ------------------------------ settings ------------------------------
+     Every tunable the camera question turns on. Units are track units, where
+     one unit is about 2.9m, so the road is a wide 18 across. */
+  var SPEC = [
+    ['height',   'Camera height',     0.2, 160, 0.5, 80],
+    ['back',     'Camera behind car', 0,   80,  0.5, 25],
+    ['pitch',    'Pitch down, deg',   0,   89,  0.5, 70],
+    ['fov',      'Vertical FOV, deg', 8,   100, 1,   40],
+    ['carY',     'Car on screen, %',  10,  100, 1,   52],
+    ['draw',     'Draw ahead',        20,  500, 5,   220],
+    ['behind',   'Draw behind',       0,   400, 5,   140],
+    ['boardTilt','Board tilt, deg',   0,   90,  1,   0],
+    ['lag',      'Camera lag',        0,   12,  0.1, 2.5],
+    ['smooth',   'Heading smoothing', 0.5, 20,  0.5, 4],
+    ['carScale', 'Car scale',         0.3, 3,   0.05, 1.2],
+    ['samples',  'Road samples',      16,  240, 1,   90],
+    ['fogLen',   'Fog depth, px',     0,   200, 1,   0],
+    ['speed',    'Auto speed, u/s',   0,   120, 1,   30],
+    ['spinRate', 'Wheel spin',        0,   3,   0.05, 1],
+    ['roll',     'Body lean',         0,   3,   0.05, 1],
+    ['stripW',   'Strip width, px',   160, 520, 4,   340],
+    ['pageH',    'Scroll length, px', 2000, 30000, 100, 9000]
+  ];
+  /* Three points on the line between the flat map and the chase camera, so
+     the question of how far down to come can be answered by clicking. */
+  var PRESETS = {
+    heli:  { height: 80, back: 25, pitch: 70, fov: 40, carY: 52, draw: 220,
+             behind: 140, boardTilt: 0,  carScale: 1.4, lag: 1,   samples: 130 },
+    drone: { height: 34, back: 26, pitch: 52, fov: 40, carY: 60, draw: 200,
+             behind: 90,  boardTilt: 35, carScale: 1.3, lag: 1.6, samples: 120 },
+    chase: { height: 3.2, back: 7, pitch: 9,  fov: 38, carY: 78, draw: 160,
+             behind: 9,   boardTilt: 90, carScale: 1.2, lag: 2.5, samples: 90 }
+  };
+
+  // Road width. Wide enough for three cars abreast at the default car
+  // scale, since a circuit that only just fits the car reads as a lane.
+  var ROAD = 6.2;
+  var HALF = ROAD / 2;
+  var KERB_W = 0.9;
+  var EDGE_W = 0.16;
+  var APRON_W = 3.4;       // paved run-off outside the kerb
+  var VERGE_W = 1.6;       // the strip beyond it, before the barrier
+  var LINE_W = 2.1;        // the worn racing line
+  var WALL_AT = HALF + KERB_W + APRON_W + 0.3;
+  var WALL_T = 0.45;       // barrier thickness
+  var WALL_H = 0.4;        // barrier height
+  var CORNER_R = 40;
+  var TIGHT_R = 18;
+  var NEAR = 0.3;
+  // Pinned, not derived from ROAD: the unit scale belongs to the lap, which
+  // is settled, so widening the road must not shrink the track.
+  var M_PER_UNIT = 2.885;
+  var CAP = 0.985;         // as on the site, so the lap never ends a corner short
+
+  var S = {};
+  var controls = document.getElementById('controls');
+  var outputs = {};
+  var inputs = {};
+
+  SPEC.forEach(function (row) {
+    var key = row[0];
+    S[key] = row[5];
+    var wrap = document.createElement('div');
+    wrap.className = 'ctl';
+    wrap.innerHTML = '<label for="c-' + key + '">' + row[1] + '</label><output></output>' +
+      '<input type="range" id="c-' + key + '" min="' + row[2] + '" max="' + row[3] +
+      '" step="' + row[4] + '" value="' + row[5] + '">';
+    var input = wrap.querySelector('input');
+    outputs[key] = wrap.querySelector('output');
+    outputs[key].textContent = row[5];
+    inputs[key] = input;
+    input.addEventListener('input', function () {
+      S[key] = parseFloat(input.value);
+      outputs[key].textContent = input.value;
+      applyLayout();
+    });
+    controls.appendChild(wrap);
+  });
+
+  function set(key, v) {
+    S[key] = v;
+    inputs[key].value = v;
+    outputs[key].textContent = v;
+  }
+
+  /* ------------------------------ geometry ------------------------------
+     The path is read once into a table at half-unit spacing, so a frame does
+     no getPointAtLength calls at all, then sampled with linear
+     interpolation. This stands in for at() in site.js. */
+  var src = document.getElementById('src');
+  var total = src.getTotalLength();
+  var N = Math.ceil(total / 0.5);
+  var H = total / N;
+  var TX = new Float64Array(N), TY = new Float64Array(N);
+  for (var i = 0; i < N; i++) {
+    var p = src.getPointAtLength(i * H);
+    TX[i] = p.x; TY[i] = p.y;
+  }
+
+  function wrap(d) { return ((d % total) + total) % total; }
+
+  var ptOut = { x: 0, y: 0 };
+  function pt(d) {
+    var u = wrap(d) / H, k = Math.floor(u), t = u - k;
+    var j = (k + 1) % N;
+    ptOut.x = TX[k] + (TX[j] - TX[k]) * t;
+    ptOut.y = TY[k] + (TY[j] - TY[k]) * t;
+    return ptOut;
+  }
+
+  function heading(d, span) {
+    var a = pt(d - span), ax = a.x, ay = a.y;
+    var b = pt(d + span);
+    return Math.atan2(b.y - ay, b.x - ax);
+  }
+
+  function wrapPi(a) {
+    while (a > Math.PI) a -= 2 * Math.PI;
+    while (a < -Math.PI) a += 2 * Math.PI;
+    return a;
+  }
+
+  // Corners, found the way furnish() finds them: turn per unit length along
+  // the path, runs of the same sign tighter than CORNER_R. Side +1 is the
+  // driver's right, which in y-down SVG is a positive turn.
+  var corners = (function () {
+    var step = 1.2, n = Math.round(total / step), h = total / n;
+    var ang = [], turn = [], k;
+    for (k = 0; k < n; k++) ang.push(heading(k * h + h / 2, h / 2));
+    for (k = 0; k < n; k++) turn.push(wrapPi(ang[k] - ang[(k + n - 1) % n]) / h);
+    var out = [];
+    k = 0;
+    while (k < n) {
+      if (Math.abs(turn[k]) < 1 / CORNER_R) { k++; continue; }
+      var a = k, side = turn[k] > 0 ? 1 : -1, sum = 0, count = 0;
+      while (k < n && Math.abs(turn[k]) >= 1 / CORNER_R && (turn[k] > 0 ? 1 : -1) === side) {
+        sum += Math.abs(turn[k]); count++; k++;
+      }
+      if (k - 1 - a < 2) continue;
+      out.push({ from: a * h, to: (k - 1) * h, side: side, radius: count / sum });
+    }
+    return out;
+  })();
+
+  function cornerAt(s) {
+    s = wrap(s);
+    for (var k = 0; k < corners.length; k++) {
+      if (s >= corners[k].from && s <= corners[k].to) return corners[k];
+    }
+    return null;
+  }
+
+  /* ------------------------------ racing line ----------------------------
+     The line a car would actually take: out wide on the way in, close to the
+     kerb at the apex, out wide again on the way out. It is worked out once,
+     as a lateral offset from the centreline at every metre of the lap.
+
+     Wanting the inside through a corner and the middle everywhere else gives
+     the apex but not the entry and the exit. Smoothing that twice, once
+     tightly and once loosely, then subtracting the loose one, leaves an
+     overshoot the other way on both sides of a corner, which is the line
+     running wide. */
+  var LINE_STEP = 1, LN = Math.max(8, Math.round(total / LINE_STEP));
+
+  // A box blur round a closed lap, run twice, so the line has no corners of
+  // its own.
+  function smoothRing(src, r) {
+    var n = src.length, a = new Float64Array(n), b = new Float64Array(n), i, k, sum;
+    for (i = 0; i < n; i++) {
+      sum = 0;
+      for (k = -r; k <= r; k++) sum += src[(i + k + n) % n];
+      a[i] = sum / (2 * r + 1);
+    }
+    for (i = 0; i < n; i++) {
+      sum = 0;
+      for (k = -r; k <= r; k++) sum += a[(i + k + n) % n];
+      b[i] = sum / (2 * r + 1);
+    }
+    return b;
+  }
+
+  var LOFF = (function () {
+    var want = new Float64Array(LN), k;
+    for (k = 0; k < LN; k++) {
+      var c = cornerAt(k * LINE_STEP);
+      want[k] = c ? c.side * (HALF - 1) : 0;
+    }
+    var tight = smoothRing(want, 5), loose = smoothRing(want, 20);
+    // The limit leaves the car's inside wheels just over the white line at an
+    // apex, which is where a real one puts them.
+    var out = new Float64Array(LN), lim = HALF - 0.9;
+    for (k = 0; k < LN; k++) {
+      var v = tight[k] * 1.85 - loose[k] * 0.85;
+      out[k] = Math.max(-lim, Math.min(lim, v));
+    }
+    return smoothRing(out, 3);
+  })();
+
+  function lineAt(s) {
+    var u = wrap(s) / LINE_STEP, k = Math.floor(u) % LN, t = u - Math.floor(u);
+    return LOFF[k] + (LOFF[(k + 1) % LN] - LOFF[k]) * t;
+  }
+
+  /* The car drives the worn line rather than the centreline, so a point on
+     the line and a heading along it stand in for pt() and heading() wherever
+     the car and the camera are placed. Everything that draws the road still
+     works off the centreline, where the cross section is measured from.
+
+     lineHeading is the tangent of the offset line, not of the centreline, so
+     the car points where it is actually going: it turns in before a corner
+     and straightens on the exit. */
+  var lpA = { x: 0, y: 0 }, lpB = { x: 0, y: 0 }, lpC = { x: 0, y: 0 };
+  function linePt(s, out) {
+    var q = pt(s), x = q.x, y = q.y;
+    var a = heading(s, 0.6), lo = lineAt(s);
+    out.x = x - Math.sin(a) * lo;
+    out.y = y + Math.cos(a) * lo;
+    return out;
+  }
+
+  function lineHeading(s, span) {
+    var a = linePt(s - span, lpA), ax = a.x, ay = a.y;
+    var b = linePt(s + span, lpB);
+    return Math.atan2(b.y - ay, b.x - ax);
+  }
+
+  // Section boards: the home page's five markers at an even share of the lap
+  // for now. On the site, measure() would place them from the scroll.
+  var SECTIONS = ['Start/finish', 'Education', 'Major projects', 'Placements', 'Contact'];
+
+  /* ------------------------------ projection ----------------------------
+     Camera-heading frame: z forward along the camera's heading, x to the
+     right, y up, origin at the car. The camera sits `back` behind and
+     `height` above, pitched down. Its heading trails the car's by `lag`, so
+     through a corner the car turns before the view does and shows its side. */
+  var cam = { cx: 0, cy: 0, cos: 1, sin: 0, cp: 1, sp: 0, f: 1, w: 1, py: 1 };
+
+  // Camera-heading frame point into camera space.
+  function view(x, y, z, out) {
+    var Y = y - S.height, Z = z + S.back;
+    out[0] = x;
+    out[1] = Y * cam.cp + Z * cam.sp;
+    out[2] = Z * cam.cp - Y * cam.sp;
+    return out;
+  }
+
+  // World point on the ground plane, lifted by `up`, into camera space.
+  function toCam(wx, wy, up, out) {
+    var dx = wx - cam.cx, dy = wy - cam.cy;
+    return view(-dx * cam.sin + dy * cam.cos, up, dx * cam.cos + dy * cam.sin, out);
+  }
+
+  function sx(c) { return cam.w / 2 + cam.f * c[0] / c[2]; }
+  function sy(c) { return cam.py - cam.f * c[1] / c[2]; }
+
+  // A polygon in camera space, clipped against the near plane, appended to a
+  // path string. Clipping keeps road that runs past the camera from folding
+  // through the vanishing point.
+  var clipBuf = [];
+  function poly(parts, pts) {
+    var n = 0, k, len = pts.length;
+    for (k = 0; k < len; k++) {
+      var p = pts[k], q = pts[(k + 1) % len];
+      var pin = p[2] >= NEAR, qin = q[2] >= NEAR;
+      if (pin) clipBuf[n++] = p;
+      if (pin !== qin) {
+        var t = (NEAR - p[2]) / (q[2] - p[2]);
+        clipBuf[n++] = [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t, NEAR];
+      }
+    }
+    if (n < 3) return;
+    var s = 'M' + sx(clipBuf[0]).toFixed(1) + ' ' + sy(clipBuf[0]).toFixed(1);
+    for (k = 1; k < n; k++) s += 'L' + sx(clipBuf[k]).toFixed(1) + ' ' + sy(clipBuf[k]).toFixed(1);
+    parts.push(s + 'Z');
+  }
+  var quadBuf = [0, 0, 0, 0];
+  function quad(parts, a, b, c, d) {
+    quadBuf[0] = a; quadBuf[1] = b; quadBuf[2] = c; quadBuf[3] = d;
+    poly(parts, quadBuf);
+  }
+
+  /* --------------------------------- car ---------------------------------
+     Convex solids in car units: z forward, x right, y up, the rear axle near
+     z = -0.7. The car is 1.56 across, so at the default scale it takes just
+     under a third of the 6.2 road; the scale slider exaggerates it as the
+     map's car does.
+
+     Each solid is backface culled on its own, which is exact for a convex
+     shape, and the solids are drawn furthest first. That order is only
+     approximate between parts, but from behind and above it holds. */
+  var CARBON = [240, 8, 15], TYRE = [240, 6, 8], TREAD = [240, 5, 24], LIVERY = null, WHITE = [0, 0, 94];
+
+  // A box that can taper from its rear face (z0) to its front face (z1):
+  // half width, bottom and top at each end, centred on x = cx.
+  function taper(cx, z0, w0, b0, t0, z1, w1, b1, t1, colour) {
+    var v = [
+      [cx - w0, b0, z0], [cx + w0, b0, z0], [cx + w0, t0, z0], [cx - w0, t0, z0],
+      [cx - w1, b1, z1], [cx + w1, b1, z1], [cx + w1, t1, z1], [cx - w1, t1, z1]
+    ];
+    var f = [[0, 1, 2, 3], [5, 4, 7, 6], [4, 0, 3, 7], [1, 5, 6, 2], [3, 2, 6, 7], [4, 5, 1, 0]];
+    return { v: v, f: f, colour: colour };
+  }
+  function box(cx, z0, z1, w, b, t, colour) {
+    return taper(cx, z0, w, b, t, z1, w, b, t, colour);
+  }
+  // A wheel: a twelve-sided prism across the car, from x0 to x1. The tread
+  // faces alternate two shades, and it is those bands running round that
+  // make the spin visible. Vertices are rebuilt each frame from `spin`.
+  var WHEEL_SIDES = 12;
+  function wheel(x0, x1, zc, r, colour) {
+    var n = WHEEL_SIDES, f = [], fc = [], k;
+    var capA = [], capB = [];
+    for (k = 0; k < n; k++) {
+      capA.push(k); capB.push(n + k);
+      f.push([k, (k + 1) % n, n + (k + 1) % n, n + k]);
+      fc.push(k % 2 ? TREAD : colour);
+    }
+    f.push(capA, capB);
+    fc.push(colour, colour);
+    var s = { v: [], f: f, fc: fc, colour: colour, wheel: { x0: x0, x1: x1, zc: zc, r: r } };
+    spinWheel(s, 0);
+    return s;
+  }
+  function spinWheel(s, spin) {
+    var wl = s.wheel, n = WHEEL_SIDES, k;
+    for (k = 0; k < n; k++) {
+      // Angle falls as the car rolls forward, so the top of the tyre moves
+      // toward the nose.
+      var a = (k + 0.5) / n * 2 * Math.PI - spin;
+      var y = wl.r + wl.r * Math.sin(a), z = wl.zc + wl.r * Math.cos(a);
+      s.v[k] = [wl.x0, y, z];
+      s.v[n + k] = [wl.x1, y, z];
+    }
+  }
+
+  function buildCar() {
+    return [
+      // Front wheels and front wing, furthest from the camera.
+      wheel(-0.74, -0.52, 0.78, 0.2, TYRE),
+      wheel(0.52, 0.74, 0.78, 0.2, TYRE),
+      box(0, 1.02, 1.22, 0.66, 0.03, 0.07, CARBON),
+      box(-0.64, 0.98, 1.24, 0.03, 0.02, 0.2, 'livery'),
+      box(0.64, 0.98, 1.24, 0.03, 0.02, 0.2, 'livery'),
+      // Nose and tub.
+      taper(0, 0.3, 0.17, 0.06, 0.3, 1.18, 0.06, 0.1, 0.17, 'livery'),
+      box(0, -0.3, 0.3, 0.2, 0.05, 0.34, 'livery'),
+      // Floor, sidepods, then the engine cover rising to the airbox.
+      box(0, -0.95, 0.55, 0.5, 0.02, 0.05, CARBON),
+      taper(-0.33, -0.7, 0.1, 0.05, 0.16, 0.05, 0.14, 0.05, 0.27, 'livery'),
+      taper(0.33, -0.7, 0.1, 0.05, 0.16, 0.05, 0.14, 0.05, 0.27, 'livery'),
+      taper(0, -0.95, 0.07, 0.05, 0.24, -0.15, 0.17, 0.05, 0.5, 'livery'),
+      // Halo and driver.
+      box(0, 0.08, 0.26, 0.15, 0.34, 0.38, CARBON),
+      box(0, -0.12, 0.08, 0.1, 0.3, 0.44, WHITE),
+      // Rear wheels, wing and beam, nearest.
+      wheel(-0.78, -0.5, -0.7, 0.24, TYRE),
+      wheel(0.5, 0.78, -0.7, 0.24, TYRE),
+      box(0, -1.08, -0.98, 0.04, 0.2, 0.52, CARBON),
+      box(-0.5, -1.22, -0.92, 0.03, 0.26, 0.64, 'livery'),
+      box(0.5, -1.22, -0.92, 0.03, 0.26, 0.64, 'livery'),
+      box(0, -1.2, -1.0, 0.47, 0.5, 0.56, CARBON),
+      box(0, -1.14, -1.02, 0.47, 0.58, 0.61, 'livery')
+    ];
+  }
+  var CAR = buildCar();
+
+  // Light from above, a little ahead and to the right.
+  var LIGHT = (function () {
+    var l = [0.35, 0.9, 0.25], m = Math.hypot(l[0], l[1], l[2]);
+    return [l[0] / m, l[1] / m, l[2] / m];
+  })();
+
+  function readLivery() {
+    var raw = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+    var m = raw.match(/([\d.]+)\s+([\d.]+)%\s+([\d.]+)%/);
+    LIVERY = m ? [+m[1], +m[2], +m[3]] : [214, 90, 50];
+  }
+
+  function shade(c, lam) {
+    var hsl = c === 'livery' ? LIVERY : c;
+    var l = Math.max(2, Math.min(96, hsl[2] * (0.55 + 0.6 * lam) + 4 * lam));
+    return 'hsl(' + hsl[0] + ' ' + hsl[1] + '% ' + l.toFixed(1) + '%)';
+  }
+
+  var carGroup = document.getElementById('car');
+  var facePool = [];
+  var carYaw = 0;
+  var spin = 0;
+  // Body lean in radians, positive leaning the top of the car to its left,
+  // which is the outside of a right-hander. The wheels stay planted and the
+  // rest of the car rolls about a centre just above the floor.
+  var roll = 0;
+  var ROLL_Y = 0.06;
+
+  function drawCar() {
+    var k = S.carScale, cy = Math.cos(carYaw), sy_ = Math.sin(carYaw);
+    var cr = Math.cos(roll), sr = Math.sin(roll), ry = ROLL_Y * k;
+    var solids = [], i, j;
+    for (i = 0; i < CAR.length; i++) {
+      var s = CAR[i], local = [], camv = [], cx = 0, cyy = 0, cz = 0;
+      if (s.wheel) spinWheel(s, spin);
+      for (j = 0; j < s.v.length; j++) {
+        var v = s.v[j];
+        // Yaw about the car's own origin. Yaw is positive to the right, as
+        // heading is in y-down SVG.
+        var x = v[0] * k, y = v[1] * k, z = v[2] * k;
+        if (!s.wheel) {
+          var rx = x * cr - (y - ry) * sr;
+          y = x * sr + (y - ry) * cr + ry;
+          x = rx;
+        }
+        var lx = x * cy + z * sy_, lz = -x * sy_ + z * cy;
+        local.push([lx, y, lz]);
+        var c = view(lx, y, lz, [0, 0, 0]);
+        camv.push(c);
+        cx += c[0]; cyy += c[1]; cz += c[2];
+      }
+      var nv = s.v.length;
+      solids.push({ s: s, local: local, camv: camv, depth: Math.hypot(cx / nv, cyy / nv, cz / nv),
+                    centre: [cx / nv, cyy / nv, cz / nv] });
+    }
+    solids.sort(function (a, b) { return b.depth - a.depth; });
+
+    var used = 0;
+    for (i = 0; i < solids.length; i++) {
+      var sol = solids[i];
+      for (j = 0; j < sol.s.f.length; j++) {
+        var face = sol.s.f[j];
+        var A = sol.camv[face[0]], B = sol.camv[face[1]], C = sol.camv[face[2]];
+        if (A[2] < NEAR || B[2] < NEAR || C[2] < NEAR) continue;
+        // Normal in camera space, flipped to point out of the solid, then
+        // culled if it faces away from the camera at the origin.
+        var n = cross(sub(B, A), sub(C, A));
+        var fc = centroid(sol.camv, face);
+        if (dot(n, sub(fc, sol.centre)) < 0) n = [-n[0], -n[1], -n[2]];
+        if (dot(n, fc) >= 0) continue;
+        // Lighting from the same normal in the car frame.
+        var ln = cross(sub(sol.local[face[1]], sol.local[face[0]]),
+                       sub(sol.local[face[2]], sol.local[face[0]]));
+        var lc = centroid(sol.local, face), lcen = centroid(sol.local, null);
+        if (dot(ln, sub(lc, lcen)) < 0) ln = [-ln[0], -ln[1], -ln[2]];
+        var mag = Math.hypot(ln[0], ln[1], ln[2]) || 1;
+        var lam = Math.max(0, dot(ln, LIGHT) / mag);
+
+        var d = '';
+        for (var q = 0; q < face.length; q++) {
+          var P = sol.camv[face[q]];
+          d += (q ? 'L' : 'M') + sx(P).toFixed(1) + ' ' + sy(P).toFixed(1);
+        }
+        var el = facePool[used];
+        if (!el) {
+          el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          el.setAttribute('stroke-linejoin', 'round');
+          el.setAttribute('stroke-width', '0.4');
+          carGroup.appendChild(el);
+          facePool.push(el);
+        }
+        var fill = shade(sol.s.fc ? sol.s.fc[j] : sol.s.colour, lam);
+        el.setAttribute('d', d + 'Z');
+        el.setAttribute('fill', fill);
+        // A hairline in the face's own colour closes antialiasing seams.
+        el.setAttribute('stroke', fill);
+        used++;
+      }
+    }
+    for (i = used; i < facePool.length; i++) facePool[i].setAttribute('d', '');
+    return used;
+  }
+
+  function sub(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
+  function dot(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
+  function cross(a, b) {
+    return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  }
+  function centroid(pts, idx) {
+    var x = 0, y = 0, z = 0, n = idx ? idx.length : pts.length;
+    for (var k = 0; k < n; k++) {
+      var p = pts[idx ? idx[k] : k];
+      x += p[0]; y += p[1]; z += p[2];
+    }
+    return [x / n, y / n, z / n];
+  }
+
+  /* ------------------------------- drawing ------------------------------ */
+  var $ = function (id) { return document.getElementById(id); };
+  var band = $('band');
+  var elRoad = $('road'), elEdge = $('edge');
+  var elApron = $('apron'), elVerge = $('verge'), elLine = $('rline'), elRubber = $('rubber');
+  var elKA = $('kerbA'), elKB = $('kerbB'), elFlag = $('flag'), boardLayer = $('boards');
+  var elWallF = $('wallFace'), elWallT = $('wallTop'), elShadow = $('shadow');
+  var elGround = $('ground'), elFog = $('fogRect'), elHorizon = $('horizon');
+  var fog = $('fog');
+  var readout = $('readout'), stats = $('stats');
+
+  // Per-sample camera-space points across the road, reused every frame.
+  // Out from the centreline: verge, run-off, kerb, white line, track, then
+  // the same again on the other side. Nothing down the middle, since a
+  // circuit has no centre line painted on it.
+  var OFFS = [
+    -HALF - KERB_W - APRON_W - VERGE_W, -HALF - KERB_W - APRON_W, -HALF - KERB_W,
+    -HALF, -HALF + EDGE_W, HALF - EDGE_W, HALF,
+    HALF + KERB_W, HALF + KERB_W + APRON_W, HALF + KERB_W + APRON_W + VERGE_W
+  ];
+  var rows = [];
+  function row(k) {
+    if (!rows[k]) {
+      rows[k] = { s: 0, x: 0, y: 0, nx: 0, ny: 0, lo: 0,
+                  pts: OFFS.map(function () { return [0, 0, 0]; }),
+                  lpts: [[0, 0, 0], [0, 0, 0]] };
+    }
+    return rows[k];
+  }
+
+  function applyLayout() {
+    document.documentElement.style.setProperty('--strip-w', S.stripW + 'px');
+    document.body.style.setProperty('--page-h', S.pageH + 'px');
+  }
+
+  var w1 = [0, 0, 0], w2 = [0, 0, 0], w3 = [0, 0, 0], w4 = [0, 0, 0];
+  var w5 = [0, 0, 0], w6 = [0, 0, 0];
+
+  function frame(d) {
+    var t0 = performance.now();
+    var w = band.clientWidth, h = band.clientHeight;
+
+    // Camera origin is the car, and the car is on the worn line, so the
+    // whole world shifts sideways as the line wanders across the road.
+    var c = linePt(d, lpC);
+    cam.cx = c.x; cam.cy = c.y;
+    var camTh = lineHeading(d - S.lag, S.smooth);
+    var carTh = lineHeading(d, 1.2);
+    carYaw = wrapPi(carTh - camTh);
+    cam.cos = Math.cos(camTh); cam.sin = Math.sin(camTh);
+    var pitch = S.pitch * Math.PI / 180;
+    cam.cp = Math.cos(pitch); cam.sp = Math.sin(pitch);
+    cam.f = (h / 2) / Math.tan(S.fov * Math.PI / 360);
+    cam.w = w;
+    // Pin the principal point so the car lands at carY% down the band.
+    var carC = view(0, 0, 0, [0, 0, 0]);
+    cam.py = h * S.carY / 100 + cam.f * carC[1] / Math.max(carC[2], NEAR);
+
+    var horizonY = cam.py - cam.f * Math.tan(pitch);
+    elGround.setAttribute('y', Math.max(0, horizonY).toFixed(1));
+    elGround.setAttribute('height', Math.max(0, h - horizonY).toFixed(1));
+    elHorizon.setAttribute('y1', horizonY.toFixed(1));
+    elHorizon.setAttribute('y2', horizonY.toFixed(1));
+    elFog.setAttribute('y', horizonY.toFixed(1));
+    elFog.setAttribute('height', Math.max(0, S.fogLen).toFixed(1));
+    fog.setAttribute('y1', horizonY.toFixed(1));
+    fog.setAttribute('y2', (horizonY + S.fogLen).toFixed(1));
+
+    // Samples fixed to the track, not to the car, so the kerbs and the line do
+    // not swim as the car moves.
+    var n = Math.round(S.samples);
+    var step = (S.draw + S.behind + 2) / n;
+    var s0 = Math.floor((d - S.behind - 2) / step) * step;
+    var k, j;
+    for (k = 0; k <= n; k++) {
+      var r = row(k), s = s0 + k * step;
+      r.s = s;
+      var q = pt(s);
+      r.x = q.x; r.y = q.y;
+      var a = heading(s, Math.min(step, 1));
+      r.nx = -Math.sin(a); r.ny = Math.cos(a);
+      for (j = 0; j < OFFS.length; j++) {
+        toCam(r.x + r.nx * OFFS[j], r.y + r.ny * OFFS[j], 0, r.pts[j]);
+      }
+      var lo = r.lo = lineAt(s);
+      toCam(r.x + r.nx * (lo - LINE_W / 2), r.y + r.ny * (lo - LINE_W / 2), 0, r.lpts[0]);
+      toCam(r.x + r.nx * (lo + LINE_W / 2), r.y + r.ny * (lo + LINE_W / 2), 0, r.lpts[1]);
+    }
+
+    // Far to near, so later quads paint over earlier ones.
+    var road = [], edge = [], ka = [], kb = [], wf = [], wt = [];
+    var apron = [], verge = [], rline = [], rubber = [];
+    for (k = n - 1; k >= 0; k--) {
+      var R0 = rows[k], R1 = rows[k + 1];
+      var A = R0.pts, B = R1.pts;
+      var idx = Math.round(R0.s / step);
+      quad(verge, A[0], B[0], B[1], A[1]);
+      quad(verge, A[8], B[8], B[9], A[9]);
+      quad(apron, A[1], B[1], B[2], A[2]);
+      quad(apron, A[7], B[7], B[8], A[8]);
+      quad(road, A[3], B[3], B[6], A[6]);
+      quad(edge, A[3], B[3], B[4], A[4]);
+      quad(edge, A[5], B[5], B[6], A[6]);
+      var corner = cornerAt((R0.s + R1.s) / 2);
+      // The line worn into the road, darker again through a corner, where
+      // the cars are hardest on it.
+      quad(rline, R0.lpts[0], R1.lpts[0], R1.lpts[1], R0.lpts[1]);
+      if (corner) quad(rubber, R0.lpts[0], R1.lpts[0], R1.lpts[1], R0.lpts[1]);
+      if (corner) {
+        var into = idx % 2 ? kb : ka;
+        if (corner.side > 0) quad(into, A[6], B[6], B[7], A[7]);
+        else quad(into, A[2], B[2], B[3], A[3]);
+        // A tyre barrier round the outside of the tight ones: the face
+        // toward the road, then its top.
+        if (corner.radius < TIGHT_R) {
+          var o1 = -corner.side * WALL_AT, o2 = -corner.side * (WALL_AT + WALL_T);
+          toCam(R0.x + R0.nx * o1, R0.y + R0.ny * o1, 0, w1);
+          toCam(R1.x + R1.nx * o1, R1.y + R1.ny * o1, 0, w2);
+          toCam(R1.x + R1.nx * o1, R1.y + R1.ny * o1, WALL_H, w3);
+          toCam(R0.x + R0.nx * o1, R0.y + R0.ny * o1, WALL_H, w4);
+          toCam(R1.x + R1.nx * o2, R1.y + R1.ny * o2, WALL_H, w5);
+          toCam(R0.x + R0.nx * o2, R0.y + R0.ny * o2, WALL_H, w6);
+          quad(wf, w1, w2, w3, w4);
+          quad(wt, w4, w3, w5, w6);
+        }
+      }
+    }
+    elRoad.setAttribute('d', road.join(''));
+    elVerge.setAttribute('d', verge.join(''));
+    elApron.setAttribute('d', apron.join(''));
+    elLine.setAttribute('d', rline.join(''));
+    elRubber.setAttribute('d', rubber.join(''));
+    elEdge.setAttribute('d', edge.join(''));
+    elKA.setAttribute('d', ka.join(''));
+    elKB.setAttribute('d', kb.join(''));
+    elWallF.setAttribute('d', wf.join(''));
+    elWallT.setAttribute('d', wt.join(''));
+
+    // Start/finish: a band across the road at every multiple of the lap.
+    var flag = [];
+    var lap = Math.floor((d + S.draw) / total) * total;
+    if (lap >= d - S.behind - 2 && lap <= d + S.draw) {
+      flagQuad(flag, lap - 0.35, lap + 0.35);
+    }
+    elFlag.setAttribute('d', flag.join(''));
+
+    // Section boards. The nearest one ahead is the Next target and carries
+    // the accent.
+    var nearest = null;
+    for (k = 0; k < BOARDS.length; k++) {
+      var ahead = wrap(BOARDS[k].at - d);
+      if (ahead <= S.draw && (!nearest || ahead < nearest.ahead)) nearest = { b: BOARDS[k], ahead: ahead };
+    }
+    for (k = 0; k < BOARDS.length; k++) {
+      var bd = BOARDS[k];
+      var rel = wrap(bd.at - d + S.behind + 2) - S.behind - 2;
+      drawBoard(bd, d + rel, rel <= S.draw, nearest && nearest.b === bd);
+    }
+
+    // Contact shadow: the car's footprint on the road, softened.
+    var sh = [], sc = S.carScale, cyw = Math.cos(carYaw), syw = Math.sin(carYaw);
+    var foot = [[-0.8, -1.05], [0.8, -1.05], [0.72, 1.2], [-0.72, 1.2]].map(function (p) {
+      var x = p[0] * sc, z = p[1] * sc;
+      return view(x * cyw + z * syw, 0, -x * syw + z * cyw, [0, 0, 0]);
+    });
+    poly(sh, foot);
+    elShadow.setAttribute('d', sh.join(''));
+
+    var faces = drawCar();
+
+    var ms = performance.now() - t0;
+    avg = avg * 0.9 + ms * 0.1;
+    stats.textContent = avg.toFixed(2) + ' ms/frame | ' + road.length + ' road quads | ' + faces + ' car faces';
+    readout.textContent = (nearest ? 'Next ' + nearest.b.name + ' ' + Math.round(nearest.ahead * M_PER_UNIT) + 'm | ' : '') +
+      Math.round(wrap(d) * M_PER_UNIT) + ' / ' + Math.round(total * M_PER_UNIT) + 'm';
+  }
+  var avg = 0;
+
+  var tmp = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]];
+  function flagQuad(parts, sa, sb) {
+    var pa = pt(sa), ax = pa.x, ay = pa.y, aa = heading(sa, 1);
+    var pb = pt(sb), bx = pb.x, by = pb.y, ba = heading(sb, 1);
+    toCam(ax + Math.sin(aa) * HALF, ay - Math.cos(aa) * HALF, 0, tmp[0]);
+    toCam(bx + Math.sin(ba) * HALF, by - Math.cos(ba) * HALF, 0, tmp[1]);
+    toCam(bx - Math.sin(ba) * HALF, by + Math.cos(ba) * HALF, 0, tmp[2]);
+    toCam(ax - Math.sin(aa) * HALF, ay + Math.cos(aa) * HALF, 0, tmp[3]);
+    quad(parts, tmp[0], tmp[1], tmp[2], tmp[3]);
+  }
+
+  /* ------------------------------- boards --------------------------------
+     One board per home page section, standing beside the track and facing
+     back down it: a panel on two posts, a strip along the top, and the
+     section name. The panel is projected exactly. The name is plain SVG text
+     laid onto the panel with the affine transform that fits its top-left,
+     top-right and bottom-left corners, which is close enough to true
+     perspective for something this small.
+
+     The text is set 100 times too large and scaled down in the transform,
+     since some browsers mishandle font sizes under a pixel.
+
+     Boards go on the inside of a corner, clear of the kerb, because the
+     tyre barrier takes the outside. On a straight they go on the left. */
+  var BOARD_UP = 0.8;       // panel bottom, above the ground
+  var BOARD_H = 1.7;        // panel height, oversized so it reads in a short band
+  var BOARD_GAP = HALF + KERB_W + 0.5;
+  var TEXT_K = 100;
+  var BOARDS = SECTIONS.map(function (name, k) {
+    var at = total * CAP * k / SECTIONS.length;
+    var corner = cornerAt(at);
+    var g = svgEl('g', { 'class': 'board' });
+    var back = svgEl('path', { 'class': 'board-back' });
+    var posts = svgEl('path', { 'class': 'board-post' });
+    var panel = svgEl('path', { 'class': 'board-panel' });
+    var strip = svgEl('path', { 'class': 'board-strip' });
+    var text = svgEl('text', { 'class': 'board-text', 'text-anchor': 'middle' });
+    text.textContent = name;
+    g.appendChild(back); g.appendChild(posts); g.appendChild(panel);
+    g.appendChild(strip); g.appendChild(text);
+    return { name: name, at: at, side: corner ? corner.side : -1,
+             g: g, back: back, posts: posts, panel: panel, strip: strip, text: text, w: 3 };
+  });
+  function svgEl(name, attrs) {
+    var node = document.createElementNS('http://www.w3.org/2000/svg', name);
+    for (var a in attrs) node.setAttribute(a, attrs[a]);
+    return node;
+  }
+  function mountBoards() {
+    BOARDS.forEach(function (b) {
+      boardLayer.appendChild(b.g);
+      // Width fits the name: measured once at the text's working size.
+      b.w = Math.max(3, b.text.getComputedTextLength() / TEXT_K + 1.2);
+    });
+  }
+
+  var bc = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]];
+  function drawBoard(b, s, inRange, isNext) {
+    b.g.setAttribute('class', isNext ? 'board is-next' : 'board');
+    var p = pt(s), px = p.x, py = p.y, a = heading(s, 1);
+    var nx = -Math.sin(a), ny = Math.cos(a);
+    var tx = Math.cos(a), ty = Math.sin(a);
+    // Near and far edges of the panel, measured out from the road. Screen
+    // left is the far edge on the left side and the near edge on the right.
+    var near = b.side * BOARD_GAP, far = b.side * (BOARD_GAP + b.w);
+    var L = b.side < 0 ? far : near, R = b.side < 0 ? near : far;
+    var top = BOARD_UP + BOARD_H, depth = 0.12;
+    /* Board tilt hinges the panel about the line of its posts. Upright at 90
+       it is the trackside board of the chase view. At 0 it lies flat on the
+       run-off, which is the only way a name reads from overhead, and is what
+       a circuit does with a sponsor name anyway. It lies forward along the
+       track, not back, so from above the name reads the way the car is
+       pointing. `u` is distance up the panel from the ground. */
+    var tilt = S.boardTilt * Math.PI / 180;
+    var st = Math.sin(tilt), ct = Math.cos(tilt);
+    var flat = S.boardTilt < 25;
+    function bp(off, u, lead, out) {
+      var f = u * ct + lead;
+      return toCam(px + nx * off + tx * f, py + ny * off + ty * f, u * st, out);
+    }
+    bp(L, top, 0, bc[0]);
+    bp(R, top, 0, bc[1]);
+    bp(R, BOARD_UP, 0, bc[2]);
+    bp(L, BOARD_UP, 0, bc[3]);
+    // The same outline a little further down the track, for the panel's
+    // thickness, which shows as the car draws alongside.
+    bp(L, top, depth, bc[4]);
+    bp(R, top, depth, bc[5]);
+    bp(R, BOARD_UP, depth, bc[6]);
+    bp(L, BOARD_UP, depth, bc[7]);
+
+    var visible = inRange && bc[0][2] > NEAR && bc[1][2] > NEAR;
+    if (!visible) { b.g.setAttribute('display', 'none'); return; }
+    b.g.removeAttribute('display');
+
+    var backParts = [], postParts = [], panelParts = [], stripParts = [];
+    // The panel's end toward the road, then its top edge. A flat board has no
+    // thickness worth drawing and nothing to stand on, so the back face and
+    // the posts drop out and it reads as paint on the run-off.
+    if (!flat) {
+      var edgeN = b.side < 0 ? [bc[1], bc[5], bc[6], bc[2]] : [bc[0], bc[4], bc[7], bc[3]];
+      poly(backParts, edgeN);
+      quad(backParts, bc[0], bc[4], bc[5], bc[1]);
+    }
+    quad(panelParts, bc[0], bc[1], bc[2], bc[3]);
+
+    // Posts, a fifth of the way in from each end.
+    var pw = 0.07;
+    if (!flat) {
+      [0.2, 0.8].forEach(function (f) {
+        var o = L + (R - L) * f;
+        var q0 = toCam(px + nx * (o - pw), py + ny * (o - pw), 0, [0, 0, 0]);
+        var q1 = toCam(px + nx * (o + pw), py + ny * (o + pw), 0, [0, 0, 0]);
+        var q2 = bp(o + pw, BOARD_UP, 0, [0, 0, 0]);
+        var q3 = bp(o - pw, BOARD_UP, 0, [0, 0, 0]);
+        quad(postParts, q0, q1, q2, q3);
+      });
+    }
+
+    // Strip along the top. Flat, it is the line the name sits behind.
+    var sh = 0.14;
+    var s0 = bp(L, top - sh, 0, [0, 0, 0]);
+    var s1 = bp(R, top - sh, 0, [0, 0, 0]);
+    quad(stripParts, bc[0], bc[1], s1, s0);
+
+    b.back.setAttribute('d', backParts.join(''));
+    b.posts.setAttribute('d', postParts.join(''));
+    b.panel.setAttribute('d', panelParts.join(''));
+    b.strip.setAttribute('d', stripParts.join(''));
+
+    // Text: map a box of (w by BOARD_H) * TEXT_K onto the panel's corners.
+    var tlx = sx(bc[0]), tly = sy(bc[0]);
+    var trx = sx(bc[1]), trY = sy(bc[1]);
+    var blx = sx(bc[3]), bly = sy(bc[3]);
+    // Too small to read, or so close that the affine fit blows the name up
+    // across the whole frame as the car draws level with it. The panel and
+    // its posts still read fine, so only the text goes.
+    if (Math.hypot(blx - tlx, bly - tly) < 7 || Math.hypot(trx - tlx, trY - tly) > cam.w * 0.8) {
+      b.text.setAttribute('display', 'none');
+      return;
+    }
+    b.text.removeAttribute('display');
+    var W = b.w * TEXT_K, Hh = BOARD_H * TEXT_K;
+    b.text.setAttribute('x', (W / 2).toFixed(1));
+    b.text.setAttribute('y', (Hh * 0.74).toFixed(1));
+    b.text.setAttribute('transform', 'matrix(' +
+      ((trx - tlx) / W).toFixed(5) + ' ' + ((trY - tly) / W).toFixed(5) + ' ' +
+      ((blx - tlx) / Hh).toFixed(5) + ' ' + ((bly - tly) / Hh).toFixed(5) + ' ' +
+      tlx.toFixed(2) + ' ' + tly.toFixed(2) + ')');
+  }
+
+  /* ------------------------------- driving ------------------------------ */
+  var dist = 0;
+  var lastDist = 0;
+  var vel = 0;
+  // One tread band is two faces, so half a band is one face's angle.
+  var SPIN_CAP = 0.75 * 2 * Math.PI / WHEEL_SIDES;
+  var playing = true;
+  var scrollMode = false;
+  var last = performance.now();
+
+  function tick(now) {
+    var dt = Math.min(0.1, (now - last) / 1000);
+    last = now;
+    if (scrollMode) {
+      var max = Math.max(1, document.documentElement.scrollHeight - innerHeight);
+      dist = (scrollY / max) * total * CAP;
+    } else if (playing) {
+      dist += S.speed * dt;
+    }
+    // Roll the wheels by the distance covered over a typical wheel radius.
+    // At a real rate the tread bands alias into a stroboscope and appear to
+    // run backwards, so each frame's turn is capped under half a band, which
+    // still reads as fast and always reads as forward.
+    var moved = dist - lastDist;
+    lastDist = dist;
+    var turn = moved * S.spinRate / (0.22 * S.carScale);
+    spin += Math.max(-SPIN_CAP, Math.min(SPIN_CAP, turn));
+
+    // Lean follows lateral acceleration, v squared over radius, so a quick
+    // scroll through a corner leans harder than a slow one and a parked car
+    // sits level. Scaled so the default speed through the tightest corners
+    // gives about 6 degrees, then eased so it settles rather than snaps.
+    if (dt > 0) {
+      var v = Math.min(200, Math.abs(moved) / dt);
+      vel += (v - vel) * Math.min(1, dt * 8);
+    }
+    var kappa = wrapPi(lineHeading(dist + 2, 1.2) - lineHeading(dist - 2, 1.2)) / 4;
+    var target = S.roll * 0.1 * vel * vel * kappa / 56;
+    target = Math.max(-0.22, Math.min(0.22, target));
+    roll += (target - roll) * Math.min(1, dt * 5);
+    frame(dist);
+    requestAnimationFrame(tick);
+  }
+
+  $('tune').addEventListener('click', function () {
+    var panel = $('panel');
+    panel.hidden = !panel.hidden;
+    this.setAttribute('aria-expanded', !panel.hidden);
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !$('panel').hidden) $('tune').click();
+  });
+
+  $('play').addEventListener('click', function () {
+    playing = !playing;
+    this.setAttribute('aria-pressed', playing);
+    this.textContent = playing ? 'Pause' : 'Play';
+  });
+
+  $('scrollMode').addEventListener('click', function () {
+    scrollMode = !scrollMode;
+    this.setAttribute('aria-pressed', scrollMode);
+    document.body.classList.toggle('scroll-mode', scrollMode);
+    if (scrollMode) window.scrollTo(0, (wrap(dist) / (total * CAP)) *
+      Math.max(1, document.documentElement.scrollHeight - innerHeight));
+  });
+
+  document.querySelectorAll('[data-preset]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var p = PRESETS[b.getAttribute('data-preset')];
+      for (var k in p) set(k, p[k]);
+      applyLayout();
+    });
+  });
+
+  $('theme').addEventListener('click', function () {
+    var root = document.documentElement;
+    var dark = root.getAttribute('data-theme') === 'dark' ||
+      (!root.hasAttribute('data-theme') && matchMedia('(prefers-color-scheme: dark)').matches);
+    root.setAttribute('data-theme', dark ? 'light' : 'dark');
+    readLivery();
+  });
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readLivery);
+
+  $('copy').addEventListener('click', function () {
+    var text = JSON.stringify(S);
+    var btn = this;
+    try {
+      navigator.clipboard.writeText(text).then(function () {
+        btn.textContent = 'Copied';
+        setTimeout(function () { btn.textContent = 'Copy settings'; }, 1200);
+      }, function () { prompt('Settings', text); });
+    } catch (e) { prompt('Settings', text); }
+  });
+
+  // Exposed for poking at from the console.
+  window.circuit3d = { S: S, total: total, corners: corners, frame: frame, lineAt: lineAt,
+    pause: function () { if (playing) $('play').click(); },
+    go: function (dd) { dist = dd; } };
+
+  readLivery();
+  mountBoards();
+  applyLayout();
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>

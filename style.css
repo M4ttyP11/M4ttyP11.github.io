@@ -20,6 +20,12 @@
   --primary-foreground:0 0% 98%;
   --accent:            214 90% 36%;   /* navy, carried from the CV */
   --ring:              240 5% 65%;
+  --kerb:              0 72% 48%;
+  /* The line worn into the road, in the circuit band. Darker than the road
+     in daylight and lighter than it at night, since a dark tint on a dark
+     road is invisible. */
+  --worn:              0 0% 0% / .18;
+  --worn-deep:         0 0% 0% / .26;
   --shadow: 0 1px 2px 0 hsl(240 6% 10% / .04), 0 1px 3px 0 hsl(240 6% 10% / .06);
   --shadow-lg: 0 10px 30px -10px hsl(240 6% 10% / .12);
 }
@@ -35,6 +41,9 @@
   --primary-foreground:240 10% 6%;
   --accent:            214 90% 62%;
   --ring:              240 5% 40%;
+  --kerb:              0 70% 55%;
+  --worn:              0 0% 100% / .05;
+  --worn-deep:         0 0% 100% / .08;
   --shadow: 0 1px 2px 0 hsl(0 0% 0% / .3);
   --shadow-lg: 0 10px 30px -10px hsl(0 0% 0% / .5);
 }
@@ -52,6 +61,10 @@
 *, *::before, *::after { box-sizing: border-box; }
 
 html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+
+/* Hide the scrollbar chrome, scrolling itself is untouched */
+html { scrollbar-width: none; -ms-overflow-style: none; }
+html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0; height: 0; display: none; }
 
 body {
   margin: 0;
@@ -1726,4 +1739,243 @@ a.card:hover .card-more svg { transform: translateX(3px); }
 
 @media (prefers-reduced-motion: reduce) {
   .lightbox[open], .lightbox[open]::backdrop { animation: none; }
+}
+
+/* ==========================================================================
+   CIRCUIT STRIP, 3D: the same circuit, seen from a helicopter
+
+   The widget above, drawn by circuit3d.js from a camera high above and
+   behind the car into the same gutter down the right of the window. Only
+   the geometry is shared: that one is a map of the lap, this is a window
+   onto the road.
+
+   While both are in the file, the 3D strip is the default and ?circuit=2d
+   puts the flat map back, so the two can be compared on the same page.
+   site.js sets data-circuit="3d" on <html> once it is up, and everything
+   below the layers hangs off that: the flat map goes, and the page gives up
+   more of its width than the map needed, since the view wants the room.
+   ========================================================================== */
+
+:root {
+  /* Wider than the flat map's 380px cap, and its height follows unless the
+     window is too short for it. The tuning panel writes these two. */
+  --c3d-w: clamp(280px, 30vw, 460px);
+  --c3d-fade-y: 11%;
+  --c3d-fade-x: 8%;
+}
+
+.c3d {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  translate: 0 -50%;
+  z-index: 40;
+  width: var(--c3d-w);
+  height: min(calc(var(--c3d-w) * 2.5), 94vh);
+  /* Off by default, like the flat map: it earns its place only where there
+     is room for it, which is the breakpoint at the end of this block. */
+  display: none;
+  overflow: hidden;
+  /* No card and no border, as the flat map had none. The mask fades the
+     world out on all four sides so it reads as a window onto the circuit
+     rather than a panel stuck to the edge of the page. */
+  -webkit-mask-image:
+    linear-gradient(to bottom, transparent 0, #000 var(--c3d-fade-y),
+                    #000 calc(100% - var(--c3d-fade-y)), transparent 100%),
+    linear-gradient(to right, transparent 0, #000 var(--c3d-fade-x),
+                    #000 calc(100% - var(--c3d-fade-x)), transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to bottom, transparent 0, #000 var(--c3d-fade-y),
+                    #000 calc(100% - var(--c3d-fade-y)), transparent 100%),
+    linear-gradient(to right, transparent 0, #000 var(--c3d-fade-x),
+                    #000 calc(100% - var(--c3d-fade-x)), transparent 100%);
+  mask-composite: intersect;
+  /* Hidden until the page has been measured, so the lap never shows starting
+     from the wrong place. */
+  opacity: 0;
+  transition: opacity .5s ease;
+}
+
+.c3d[data-ready="true"] { opacity: 1; }
+.c3d-view { display: block; width: 100%; height: 100%; }
+
+/* The road, out from the centreline. Everything here is a flat fill: the
+   projection does the work, so there is no stroke anywhere in the strip. */
+/* From this high the ground plane covers the whole frame, so filling it
+   would put a slab of colour where the flat map had none, and there is no
+   horizon in shot to draw. The verge carries the edge of the world and the
+   page shows through past it. */
+.c3d-ground { fill: none; }
+.c3d-horizon { display: none; }
+.c3d-road { fill: hsl(var(--muted-foreground) / .55); }
+.c3d-edge { fill: hsl(var(--foreground) / .7); }
+.c3d-apron { fill: hsl(var(--muted-foreground) / .3); }
+.c3d-verge { fill: hsl(var(--muted-foreground) / .16); }
+.c3d-rline { fill: hsl(var(--worn)); }
+.c3d-rubber { fill: hsl(var(--worn-deep)); }
+.c3d-kerb-a { fill: hsl(var(--kerb)); }
+.c3d-kerb-b { fill: hsl(0 0% 98%); }
+.c3d-flag { fill: hsl(0 0% 98%); }
+.c3d-wall-face { fill: hsl(var(--foreground) / .32); }
+.c3d-wall-top { fill: hsl(var(--foreground) / .5); }
+.c3d-shadow { fill: hsl(0 0% 0% / .28); }
+
+/* Section boards. The one the chip names takes the accent along its top. */
+.c3d-board-panel { fill: hsl(var(--card)); stroke: hsl(var(--border)); stroke-width: .6; }
+.c3d-board-back { fill: hsl(var(--muted-foreground) / .45); }
+.c3d-board-post { fill: hsl(var(--muted-foreground) / .7); }
+.c3d-board-strip { fill: hsl(var(--muted-foreground) / .6); }
+.c3d-board.is-next .c3d-board-strip { fill: hsl(var(--accent)); }
+.c3d-board-text {
+  fill: hsl(var(--foreground));
+  /* Set 100 times too large and scaled down in the transform: see the boards
+     section of circuit3d.js. */
+  font: 600 92px var(--font);
+  letter-spacing: -.5px;
+}
+
+/* The Next chip is the one part of the flat map that still earns its place,
+   so site.js moves the same button into the strip rather than a second one
+   being written. It sits at the foot, inside the fade, where there is no
+   road under it to fight with. */
+.c3d .circuit-next {
+  position: absolute;
+  left: 50%;
+  bottom: .9rem;
+  translate: -50% 0;
+  z-index: 2;
+  flex-direction: row;
+  align-items: baseline;
+  gap: .4rem;
+  width: auto;
+  margin: 0;
+  padding: .3rem .7rem;
+  border-radius: 999px;
+  line-height: 1.4;
+  white-space: nowrap;
+  background: hsl(var(--background) / .82);
+  backdrop-filter: saturate(180%) blur(8px);
+}
+
+/* An out lap, on a project page: same strip, retinted, so it never reads as
+   the circuit you left. */
+.c3d[data-mode="outlap"] { --accent: 28 92% 42%; }
+[data-theme="dark"] .c3d[data-mode="outlap"] { --accent: 32 95% 58%; }
+
+html[data-circuit="3d"] .circuit { display: none; }
+
+@media (min-width: 1280px) {
+  .c3d { display: block; }
+  /* The strip takes its width off the window first and the page centres in
+     what is left, rather than the strip squeezing into whatever gutter a
+     centred container happened to leave. That is what buys it the room. */
+  html[data-circuit="3d"] body { padding-right: var(--c3d-w); }
+  html[data-circuit="3d"] {
+    --container: min(1140px, calc(100vw - var(--c3d-w) - 6rem));
+  }
+  /* The fixed bar on a project page stops at the strip for the same reason. */
+  html[data-circuit="3d"] .nav { right: var(--c3d-w); }
+}
+
+/* A world that rotates under you is far more motion than a dot on a map. */
+@media (prefers-reduced-motion: reduce) { .c3d { display: none; } }
+
+
+/* The switch between the two, written by site.js rather than into the
+   markup, since it only means anything where both can run. It sits in the
+   bottom left corner with the theme switch, out of the reading path and at
+   the far side of the page from the circuit itself, and it names the view it
+   will move to. Below the breakpoint neither view is shown, so nor is it. */
+.circuit-toggle {
+  position: fixed; z-index: 50;
+  bottom: 1.5rem;
+  left: 1.5rem;
+  display: none;
+  place-items: center;
+  width: 38px; height: 38px;
+  padding: 0;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-sm);
+  background: hsl(var(--card));
+  backdrop-filter: saturate(180%) blur(12px);
+  color: hsl(var(--foreground));
+  font: 600 .72rem/1 var(--mono, ui-monospace, monospace);
+  letter-spacing: .02em;
+  cursor: pointer;
+  opacity: .75;
+  transition: background .15s, border-color .15s, opacity .15s;
+}
+.circuit-toggle:hover { background: hsl(var(--muted)); opacity: 1; }
+/* Beside the floating theme switch where the page has one, alone where it
+   does not. */
+.circuit-toggle[data-pair="theme"] { left: calc(1.5rem + 46px); }
+
+@media (min-width: 1280px) { .circuit-toggle { display: grid; } }
+
+/* The tuning panel. Not part of the site: it is here while the camera is
+   still being argued about, and goes when the numbers are settled. */
+.c3d-tune-btn {
+  position: fixed;
+  right: .75rem; top: .75rem;
+  z-index: 60;
+  width: 30px; height: 30px;
+  display: grid; place-items: center;
+  padding: 0;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--card) / .8);
+  backdrop-filter: blur(6px);
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+  opacity: .45;
+  transition: opacity .15s ease, color .15s ease;
+}
+.c3d-tune-btn:hover, .c3d-tune-btn[aria-expanded="true"] {
+  opacity: 1;
+  color: hsl(var(--foreground));
+}
+.c3d-tune-btn svg { width: 15px; height: 15px; }
+
+.c3d-tune-panel {
+  position: fixed;
+  right: .75rem; top: 3.2rem;
+  z-index: 60;
+  width: min(300px, calc(100vw - 1.5rem));
+  max-height: calc(100vh - 5rem);
+  overflow: auto;
+  display: grid;
+  gap: .35rem;
+  padding: .8rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  background: hsl(var(--card) / .96);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 30px -10px hsl(0 0% 0% / .4);
+}
+.c3d-tune-panel[hidden] { display: none; }
+.c3d-tune-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0 .5rem;
+  font-size: .72rem;
+  color: hsl(var(--muted-foreground));
+}
+.c3d-tune-row output { font-family: var(--mono); }
+.c3d-tune-row input {
+  grid-column: 1 / -1;
+  width: 100%;
+  margin: 1px 0 0;
+  accent-color: hsl(var(--accent));
+}
+.c3d-tune-copy {
+  margin-top: .3rem;
+  padding: .35rem .6rem;
+  font: inherit;
+  font-size: .72rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--card));
+  color: inherit;
+  cursor: pointer;
 }

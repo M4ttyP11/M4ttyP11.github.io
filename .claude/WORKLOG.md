@@ -1192,3 +1192,336 @@ padding cut to 1.25rem, divider above the tags gone. Not committed.
 
 Matty: the "Each has its own page..." sub-line under "The three projects I'm
 proudest of" states the obvious. Removed from `index.html`. Not committed.
+## 2026-09-16, worktree created for the 3D circuit idea
+
+Branched from `a4eb127` on main, so the nav removal, icon contact links,
+`.major-grid` and `projects/index.html` are all already here.
+
+`.claude/BRIEF.md` has been replaced. It was the site-polish brief, which is
+finished and merged, and is now the brief for one question: can the circuit
+widget become a view from behind the car rather than a map above it.
+
+Decision taken before any code: the widget moves to a fixed band across the
+bottom of the viewport, full width and roughly 110px tall, replacing the
+right-hand gutter strip. A chase camera needs width and a horizon that runs
+across the frame, and the current strip is the worst possible shape for that.
+The top was ruled out because the nav was just removed from there on purpose.
+
+Approach is a hand-rolled perspective projection still emitting SVG, no
+WebGL. The closed `<path>` in `index.html` stays the only real geometry, and
+`at()`, `furnish()` and `measure()` are all reused. See the brief.
+
+Nothing built yet. First step is a standalone prototype at
+`proto/circuit3d.html` with camera sliders, to be shown to Matty before
+anything is wired into the page.
+
+## 2026-09-16, milestone 1: standalone 3D prototype
+
+`proto/circuit3d.html`, not linked from the site. Same track path as
+`index.html`, copied in. Hand-rolled perspective projection into SVG: the path
+is tabled once at 0.5 unit spacing, then each frame samples the road at
+track-fixed spacing (so stripes do not swim), transforms to car-local space,
+applies camera pitch and perspective, and clips quads at a near plane.
+
+Draws road, edge lines, centre dashes, red/white kerbs on the inside of
+corners (same turn-rate detection as `furnish()`), a start/finish band, placeholder
+section boards at even shares of the lap, fog at the horizon, and a rear-view
+car built from boxes. Sliders for camera height, distance behind, pitch, FOV,
+car screen position, draw distance, samples, fog, heading smoothing, car
+scale, speed, band height and page height. Presets, theme toggle, auto drive
+or drive by scroll, and a copy-settings button.
+
+Checked in Orca's browser: renders, about 0.5 to 0.7 ms per frame. Track is
+531 units, about 1533m at 2.9m per unit. Silverstone (5891m) is under
+consideration for later; Matty expects it may need shortening for scroll speed.
+Open: Matty to pick a camera. Boards are placeholders. Not committed.
+
+## 2026-09-16, prototype: sliders tucked away, 3D car
+
+Matty liked the default camera (TV chase: height 3.2, back 7, pitch 9, FOV 38,
+car at 78%) and the current track length, so both stay.
+
+- Sliders and buttons moved into a panel opened by a small button in the
+  band's top-right corner. Escape closes it.
+- Car rebuilt as convex solids (tapered boxes, octagonal wheels) with
+  per-solid backface culling, far-to-near solid sort, and flat shading from a
+  fixed light. Livery reads `--accent`, so it follows the theme.
+- Camera heading now trails the car's by a `lag` slider (default 2.5), so the
+  car yaws into corners and shows its side. Biggest single gain in depth.
+- Soft contact shadow under the car, and tyre barriers with height round the
+  outside of corners tighter than R18.
+
+Checked in Orca's browser, no console errors. Solid sort is approximate and
+could misorder at extreme car scale; fine at 1.2. Not committed.
+
+## 2026-09-16, prototype: taller band, scroll length fix, spinning wheels
+
+- Band default 110px to 150px.
+- "Page height" slider only applied in Drive by scroll mode, so it looked
+  dead. Body is now always that tall, and the slider is renamed "Scroll
+  length, px" so it is not mistaken for the band height.
+- Wheels are twelve-sided prisms with alternating tread shades, rebuilt each
+  frame from a spin angle driven by distance covered. Per-frame turn is capped
+  under half a tread band so it never aliases into spinning backwards. New
+  "Wheel spin" slider scales the rate.
+
+Checked in Orca's browser: band 149px, scrollHeight 9000, car faces change
+frame to frame, no console errors. Not committed.
+
+## 2026-09-16, prototype: body lean and section boards
+
+- Body lean: sprung parts (everything but the wheels) roll about a centre just
+  above the floor, by lateral acceleration (smoothed speed squared times
+  curvature), clamped to about 12 degrees and eased. Parked car sits level.
+  "Body lean" slider scales it.
+- Section boards: one per section at an even share of the lap, on the inside
+  of a corner (barriers take the outside) or the left on a straight. Panel on
+  two posts with thickness, a top strip that turns accent on the Next board,
+  and the name as SVG text fitted to the projected panel with an affine
+  matrix (text set 100x and scaled down). Width fits the name. Text hides
+  under 7px tall. Oversized (1.7 units tall) so names read in a 150px band.
+
+Checked in Orca's browser: lean visible mid-corner, "Education" legible about
+50m out at 150px, no console errors. Boards still use even spacing, not
+measure(). Not committed.
+
+## 2026-09-16, prototype: scenery, trees and grandstands
+
+- New world layer (`#world`) holding boards and props, sorted far to near
+  each frame and reordered in the DOM only when out of place, so trees cover
+  boards behind them. Props are convex world-space solids with normals and
+  shading worked out at build time; a frame culls faces against the camera
+  position and projects through the existing near-plane clipper.
+- Trees: seeded, clumped placement, 11 units clear of the centreline and clear
+  of boards and stands. Conifers (two cones) and broadleaf (faceted crown).
+  LOD drops trunks past 50 and conifer top cones past 90. Fade over the last
+  30 units of draw distance. "Trees" slider, default 160.
+- Grandstands: four crowd tiers (random colours incl. livery), back wall and
+  cantilever roof, built in 4-unit segments so the sort holds on a curve. One
+  on the outside of the main straight, one behind the barrier of the tightest
+  corner.
+
+Checked in Orca's browser, no console errors, about 3 ms/frame with ~950
+prop faces. Open: at the default camera (height 3.2, back 7) the horizon sits
+~20px from the top of a 150px band, so anything tall near the track is cut
+off. Height 2 / back 9 / pitch 4 gives the scenery room; defaults not changed.
+The main stand fills the right of the frame while alongside it. Not committed.
+
+## 2026-09-16, scenery reverted
+
+Matty didn't like how the trees and grandstands looked, so the scenery entry
+above is fully undone: world layer, props, Trees slider and draw sort
+removed, boards back in `#boards`. File is back to 1014 lines, as after
+the boards and lean work.
+
+## 2026-09-17, prototype: reads as a circuit, not a road
+
+Three changes Matty picked from the list of what separates a track from a road.
+
+- Centre dashes gone. A circuit has nothing painted down the middle, and the
+  dashes were the biggest tell. `DASH_W` and the `#dash` layer are removed.
+- Paved run-off and a verge either side: `APRON_W` 3.4 and `VERGE_W` 1.6 in
+  the cross section, drawn under the road, with the tyre barrier moved out to
+  sit behind them (`WALL_AT` is now HALF + KERB_W + APRON_W + 0.3).
+- A worn racing line: wide in, apex, wide out. Worked out once as a lateral
+  offset per metre of lap. Wanting the inside through a corner and the middle
+  elsewhere, smoothed tightly and loosely and the loose one subtracted, gives
+  the overshoot either side of a corner that reads as running wide. Two
+  tints, the deeper one through corners for rubber. `--worn` / `--worn-deep`
+  flip from a dark tint in light theme to a light one in dark, since a dark
+  tint on a dark road is invisible.
+
+`side` on a corner is the inside, the way the kerbs and boards already use
+it: the line was inverted at first and hugged the outside.
+
+Checked in both themes, no console errors, 1.3 ms/frame. Orca's
+`orca screenshot` timed out every time this session, so shots were taken by
+cloning the band's SVG in the page with computed styles inlined, drawing it
+to a canvas and reading the data URL (`scratchpad/grab.js`).
+
+Open: the car still drives down the centreline while the worn line runs wide,
+which now reads as a mismatch. Not committed.
+
+## 2026-09-17, prototype: car drives the line, wider road
+
+- The car and the camera now follow the worn racing line, not the centreline.
+  Two new helpers, `linePt()` and `lineHeading()`, stand in for `pt()` and
+  `heading()` wherever the car is placed. Everything that draws the road still
+  works off the centreline, since the cross section is measured from it. The
+  car is still at the camera origin, so the world shifts sideways under it
+  and `drawCar()` is untouched. Heading comes from the offset line's own
+  tangent, so the car turns in before a corner and straightens on the exit.
+  Body lean now reads curvature from the line too, which is lower at an apex
+  and higher on entry, as it should be.
+- Road widened from 5.2 to 6.2 units, a little over three car widths at the
+  default car scale. `M_PER_UNIT` is now pinned at 2.885 rather than derived
+  from `ROAD`, so widening the road does not shrink the lap: it is still 531
+  units and 1533m. Worn line width 1.8 to 2.1 to stay in proportion. The
+  line's lateral limit is `HALF - 0.9`, which puts the inside wheels just
+  over the white line at an apex.
+- Checked in Orca's browser at a straight, a corner entry and an apex: signs
+  are right (outside on entry, kerb at the apex), 1.3 ms/frame, no errors.
+  Screenshots via `orca screenshot --json` plus a crop of the band, which
+  works now where `orca screenshot` timed out last session.
+
+The second half of step 1, boards placed from section shares rather than even
+spacing, has nothing to change in the prototype: `drawBoard` already takes a
+lap distance, and the prototype's scroll mode maps scroll linearly, so even
+spacing is correct here. It becomes real when `measure()` feeds the module, at
+the extraction step. Not committed.
+
+## 2026-09-17, the band on the actual site
+
+Matty wanted to see it on the site before anything is committed, so the
+prototype's engine is now extracted and wired in. Still uncommitted.
+
+- New `circuit3d.js`, 880 lines: the renderer and nothing else. Takes a path,
+  a lap fraction and a list of markers, and draws the band. The camera is
+  baked in as constants (height 3.2, back 7, pitch 9, FOV 38, car at 78%,
+  draw 160, lag 2.5); the sliders stay in `proto/circuit3d.html`. Dropped the
+  panel, presets, stats and readout. Added open-lap support for project
+  pages: distances clamp instead of wrapping, the racing line's smoothing
+  holds its end values instead of folding the pit exit into the finish, no
+  road is drawn off either end, and the flag sits at the finish only.
+  `frame(f)` returns true while the car's lean is still settling, so the page
+  keeps asking for frames the same way `headingAt()` does for the strip.
+- `site.js`: the circuit module keeps everything about the page, `measure()`
+  and its section shares, `lapRun`, the chip, and now decides which renderer
+  draws. In 3D it skips `furnish()` and the dasharray work, feeds the boards
+  from the same `stops` shares the dots use, and moves the existing
+  `.circuit-next` button into the band rather than writing a second chip.
+- `style.css`: `--kerb`, `--worn` and `--worn-deep` added to both token
+  blocks, and a band block at the end. In 3D the strip is hidden, the
+  container stops reserving 340px of gutter for it, the body gains bottom
+  padding so the footer clears the band, and `.theme-float` lifts above it.
+  Band shows from 1280px up, as the strip did, and stays off under reduced
+  motion.
+- `?circuit=2d` puts the flat strip back, so the two can be compared on the
+  same page. Verified: no band, 155 furniture elements, strip as before.
+- Checked in Orca's browser: home page in both themes, a project page out lap
+  retinted orange with the livery following it, chip click scrolls and renames
+  itself, 1.41 ms/frame. Board names are now hidden when the panel is wider
+  than 80% of the band, since drawing level with a board blew the name up
+  across the whole frame.
+- Found and fixed a pre-existing typo in `index.html`: the `?intro=1` replay
+  test held a literal backspace where `\b` was meant, so the flag never
+  matched. One character.
+
+Open: the band is 150px of every screen and reads a little like a bar at the
+foot of the page; the brief wants it quiet when idle, which is not done.
+Matty to decide between this and the strip before anything is committed.
+
+## 2026-09-17, helicopter view in the side strip
+
+Matty prefers the widget back in the side gutter, not the bottom band, and
+wants a middle ground: near top-down, car fixed on screen with the world
+turning under it, keeping the 3D detail. New prototype `proto/circuit-heli.html`,
+a copy of the chase prototype with the camera opened up and the frame put back
+in the strip. Nothing on the site touched, the band and `circuit3d.js` are as
+they were.
+
+- Layout: the band block becomes a fixed strip in the right gutter, 340px wide
+  and 2.5 times as tall, masked on both axes so the world fades off all four
+  sides rather than a border cutting it. The ground rect and horizon line are
+  off: from overhead the ground plane fills the frame, so filling it would put
+  a slab of colour where the flat map had none, and the page shows through
+  beyond the verge.
+- Sliders: pitch now goes to 89, height to 160. `back` stays the camera's
+  offset, and a new `behind` slider owns how much road is drawn behind the car,
+  which the chase view never needed and a centred car does. The flag range and
+  the board wrap use `behind` too.
+- Boards: a "Board tilt" slider hinges the panel about its posts. At 90 it is
+  the trackside board of the chase view. At 0 it lies flat on the run-off,
+  laid forward along the track so the name reads the way the car points, which
+  is the only way a name reads from overhead. Flat, the back face and posts
+  drop out and it reads as paint.
+- Presets are now Helicopter (height 80, back 25, pitch 70, fov 40, car at 52%,
+  draw 220, behind 140, flat boards), Drone (34 / 26 / 52, boards at 35 deg)
+  and TV chase, so the question of how far down to come is a click.
+
+Checked in Orca's browser at 340x850: 1.56 ms/frame, no errors. `orca
+screenshot` fails with runtime_unavailable this session, so shots came off the
+SVG-to-canvas grab again.
+
+Open: Matty to pick a camera. Then the band work gets reversed, `circuit3d.js`
+retargets to the strip, and the bottom-band CSS comes out.
+
+## 2026-09-17, the helicopter view wired into the site
+
+Matty picked the helicopter camera off the prototype and asked for it on the
+real pages, with room made for it. Done, still uncommitted.
+
+- `circuit3d.js`: camera is now height 80, back 25, pitch 70, FOV 40, car at
+  52% down the frame, draw 220 ahead. Two new knobs came over from the
+  prototype: `behind`, which owns how much road is drawn back down the track
+  and which a centred car needs, and `boardTilt`, which hinges a section board
+  about its posts. At 0 the board lies flat on the run-off, laid forward along
+  the track so the name reads the way the car points, and its back face and
+  posts drop out. `back` still means only where the camera sits. Fog is 0: the
+  horizon is off the top of the frame at this pitch.
+- `circuit3d.js` also gains `tune()`, which is the prototype's slider panel on
+  the page itself: 14 camera rows plus strip width and the two fade depths,
+  which it writes as custom properties. Copy settings puts the current numbers
+  on the clipboard shaped like the CAM block. Matty asked for this to stay
+  while the look is still being settled. `?tune=0` hides it, and dropping the
+  one call in site.js removes it for good.
+- `style.css`: the band block becomes a strip block. Fixed to the right edge,
+  centred vertically, `--c3d-w` of `clamp(280px, 30vw, 460px)` wide and 2.5
+  times that tall unless the window is short. Masked on both axes so the world
+  fades off all four sides. Ground fill and horizon line are off. The page
+  gives up the width: `body` takes a padding-right of the strip width and the
+  container centres in what is left, rather than the strip squeezing into the
+  gutter a centred container happened to leave. A project page's fixed nav
+  stops at the strip. The Next chip moves to the foot of the strip with a
+  blurred backing, since there is no sky to hold it now.
+- `site.js`: mounts the panel, and a slider change remeasures the lap as well
+  as asking for a frame, because the width rows reflow the page.
+
+Checked in Orca's browser at 2279x1281: home page in both themes, a project
+page out lap orange and open-ended, no overflow, container right edge 1480
+against a strip starting at 1819, sliders driving both camera and layout live,
+`?circuit=2d` still putting the flat map back with no strip, no padding and no
+panel. Scrolling holds 60fps. `orca screenshot` is still failing with
+runtime_unavailable, so shots came off the SVG-to-canvas grab.
+
+Open: the flat map, `?circuit=2d` and the prototypes all stay until the look
+is signed off. An out lap leaves the top half of the frame empty once the car
+reaches the flag. Boards can fall outside the frame on a wide corner, there is
+no slider for how far out they sit.
+
+## 2026-09-18, a switch between the two views
+
+Matty likes the helicopter view and wants both available, so the choice moved
+out of the URL and onto the page. Still uncommitted.
+
+- `site.js`: `want3d`, a one-shot flag read at load, is now a `mode` that can
+  change while the page is up. `apply(m)` swaps renderers: creating or
+  disposing the Circuit3D view, moving the Next chip between the map and the
+  3D strip and back to where it came from, setting or clearing
+  `data-circuit="3d"`, and showing or hiding the tuning panel. The flat map's
+  furniture is laid down the first time 2D is asked for rather than at load,
+  so a reader who never leaves the 3D view never pays for it. Everything
+  measured survives a swap: both renderers read the same path and the same
+  scroll mapping, so the swap is followed by a measure and a render and
+  nothing else.
+- The button is written by `site.js` rather than into eight pages of markup,
+  since it only means anything where both renderers can run. Bottom left with
+  the theme switch on the home page, alone on a project page, showing the view
+  it will move to: "2D" while the helicopter view is up, "3D" while the map
+  is. Hidden below 1280px, where neither view shows.
+- The choice is remembered in `localStorage` under `circuit-view`, and
+  `?circuit=2d` or `?circuit=3d` overrides it for that load without being
+  remembered, so a link to either stays honest.
+- `style.css`: a `.circuit-toggle` block, matching `.theme-toggle` and shifted
+  clear of `.theme-float` where the page has one.
+
+One trap worth recording: the first version called its own `label()`, but
+`label` is already the strip's caption element in that scope, so the var
+assignment clobbered the hoisted function and the button was never mounted.
+Renamed to `relabel()`.
+
+Checked both ways on the home page and on a project page out lap: furniture
+appears on the first switch to 2D and the map drives normally, the 3D view
+comes back with its boards, its out lap tint and its ready flag, the chip
+lands back in the right parent, the page's right padding and the project nav
+follow, no overflow either way.

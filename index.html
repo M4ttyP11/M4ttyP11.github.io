@@ -40,7 +40,7 @@
 
     // The intro plays once per session so repeat navigation isn't gated by it.
     var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    var force = /[?&]intro=1/.test(location.search);   // ?intro=1 replays it on demand
+    var force = /[?&]intro=1/.test(location.search);   // ?intro=1 replays it on demand
     var seen;
     try { seen = sessionStorage.getItem('introSeen'); } catch (e) { seen = null; }
     if (!reduce && (force || !seen)) {
@@ -536,6 +536,7 @@
   <p class="circuit-label" id="circuitLabel">Start/finish</p>
 </aside>
 
+
 <!-- Certificate, full size. Styled after the shadcn Dialog: dimmed and
      blurred overlay, bordered panel, close button top right. Native <dialog>
      gives focus trapping and Escape for free. -->
@@ -547,6 +548,8 @@
        alt="Certificate of completion from Racetrack Dynamics for The Complete Guide to Aerodynamics in F1, awarded to Mathias Potter, 12 and 13 September 2026">
 </dialog>
 
+
+<script src="circuit3d.js"></script>
 <script src="site.js"></script>
 </body>
 </html>
