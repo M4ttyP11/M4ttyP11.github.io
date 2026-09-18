@@ -1548,3 +1548,213 @@ blocks, since each side ended mid-rule and shared the closing one.
 Checked after the rebase: certificate lightbox opens and closes, both circuit
 views swap on the home page, a project page keeps its out lap and its tint, no
 overflow. Branch pushed and `main` fast-forwarded to `9a5c521`.
+
+## 2026-09-18, a clear start and end for the out lap in 3D
+
+Matty: the 3D band's out lap started and stopped dead, which read as jarring
+on a project page. Given the choice between running the road off both edges
+of the frame and giving it a marked start and end, he picked the marked one.
+
+`circuit3d.js`:
+
+- The path stops at 0 and at `total`, so the road is now carried straight on
+  past both ends along the end tangent (`ptEx`/`headEx`, `OPEN_IN` 18 before,
+  `OPEN_OUT` 20 after). The tangents are the ones `heading()` already reports
+  at each end, so the join has no kink. Only the road surface uses it: the
+  car, the camera and the racing line stay inside the path proper.
+- The run-in and the run-out are approach road, not racing surface, so they
+  carry no worn line, no rubber and no kerbs (`onLap` in the sample loop).
+- `gate()` closes each end with a barrier across the full width, in the tyre
+  barrier colours, drawn after the loop so it sits over them.
+- The start/finish marking is now a real chequer, `chequer()`, two rows of six
+  cells across the road, laid out the way the flat map lays its own out. It
+  replaced the plain white band on both a lap and an out lap. An out lap also
+  keeps a plain white line at its start, so both of its ends are marked.
+
+`style.css`: `.c3d-flag-b` for the dark cells, fixed black rather than a
+theme token, since a chequer is black and white in both themes and the road
+under it is the same mid grey either way.
+
+Checked in the browser on a project page and the home page: the out lap now
+runs in to a barrier below the car at the top of the page and out to one past
+the flag at the bottom, the lap's start/finish reads as a chequer, no console
+errors. Not committed.
+
+Still open: the section boards. Matty wants them as banners over the track or
+as trackside sponsor boards instead of the flat panels they are now.
+
+## 2026-09-18, section boards became gantries over the track
+
+Matty picked the overhead option and asked for the start/finish to be the
+light rig across the track rather than a name.
+
+`circuit3d.js`, `drawBoard()` rewritten. A section is now a banner slung under
+a beam that spans the road on two legs standing outside the kerb, instead of a
+panel lying flat on the run-off. The banner hinges on its top edge and leans
+back toward the oncoming car by `CAM.boardTilt`, 45 degrees: upright it would
+be nearly edge on to a camera pitched 70 degrees down and the name would not
+read, at 45 its face is within about 25 degrees of square to the view. The old
+`boardTilt` slider now drives that lean and a `gantry` slider sets the beam
+height, so both are still findable on `?tune=1`.
+
+- `setBoards` no longer needs a side, since a gantry spans the road. It marks
+  the stop sitting on the start/finish of a closed lap as `lights`.
+- A lights gantry carries five red lamps on a dark rig and no name. They are
+  lit only while the Next chip names that section, which is exactly while the
+  car is on the line, so they go out as it pulls away.
+- The board layer moved after the car, so the car passes under a gantry rather
+  than over it. A camera above and behind sees the beam first wherever the two
+  overlap, and one far enough ahead to be behind the car is by then too near
+  the top of the band to reach it.
+- The name is dropped, keeping the gantry, in a third case now: when the
+  banner is edge on round a corner and the text would come out on its side.
+
+`style.css`: the legs read lighter than the beam, and `.is-lights` gives the
+rig a fixed dark panel with lamps that turn red on `.is-next`.
+
+Checked in the browser, both themes, home page and a project page: the start
+rig sits over the chequer with the car under it, a named banner reads from a
+long way back and keeps its accent bar, the out lap's Pit exit gantry sits on
+its start line, no console errors.
+
+Still open: nothing named. Not committed.
+
+## 2026-09-18, the gantry sign built as geometry rather than a card
+
+Matty said the boards read as "a weird card over the top" and asked for the
+name to be part of the 3D design. The cause was material, not projection: the
+panel was filled with `--card` and stroked with `--border`, the name was
+`--foreground` at UI weight, and the accent bar was `--accent`, none of them
+shaded, so the whole gantry was flat UI colour sitting over a lit scene. The
+banner was also only as wide as its name, floating in the middle of a wider
+beam, which is what made it look stuck on.
+
+`circuit3d.js`, `drawBoard()` rebuilt around the car's own face pipeline:
+
+- Each face is now its own pooled `<path>`, filled by `shade()` from a normal
+  in gantry space against the same `LIGHT` the car uses, and hairlined in its
+  own colour the way the car's faces are. The beam's top is lit, its face
+  toward the car falls away, the left leg's inner face is the lit one.
+- New fixed materials at the top of the file, `STEEL`, `SIGN`, `SIGN_INK`,
+  `BAND`, `RIG`, `LAMP_ON`/`LAMP_OFF`, rather than page tokens: a sign is a
+  sign in either theme, and a token fill cannot be shaded.
+- The board runs the full span between the legs and hangs flush off the beam's
+  underside, so it is the gantry's own panel. `BOARD_T` adds a bottom edge
+  face, which is dark under this light and gives it thickness.
+- The name is still SVG text on an affine fit, which is within about a per
+  cent of true perspective over a board this shallow (checked: the board's
+  depth is about 1 per cent of the camera distance, so the trapezoid a true
+  projection would give is not worth the strips it would cost). It is now
+  fitted to its own lettering box rather than the whole board, and filled with
+  `shade(SIGN_INK, ...)` in the board's light instead of `--foreground`.
+- The livery band moved off the bottom edge and is knocked back off the car's
+  livery, so it reads as paint on the board rather than a rule under the name.
+
+`style.css`: every `.c3d-board-*` fill rule deleted, since a CSS fill would
+override the shaded presentation attribute. Only `.c3d-board-text` is left,
+without a fill, and tracked out rather than tightened.
+
+Checked with a headless Edge harness rather than the Orca browser, whose
+screenshots were coming back from a stale frame and then failing with the
+panel hidden. The harness was a throwaway `_probe.html` that pulled the path
+out of `index.html` and drew several lap fractions side by side, deleted
+again after. Both themes: a named gantry reads over the road with the car
+under it, the start rig carries five red lamps over the chequer, no errors.
+
+Not committed.
+
+## 2026-09-18, the page bands run under the 3D strip
+
+Matty: the background tint shifts from section to section as you scroll, but
+the column the track sits in never changed with it, so the strip read as a
+separate panel rather than part of the page.
+
+Cause: in 3D mode the strip took its room with `body { padding-right:
+var(--c3d-w) }`. Padding is inside the background box of the body but outside
+every section's, so `.section-alt`'s tint, the `.section` top rules, the
+`.proj-band` and `.proj-next` tints and the footer rule all stopped at the
+strip's left edge. That left a column of flat `--background` down the right
+that never changed, with a hard vertical seam at every tinted section.
+
+`style.css`, the 3D block at the end: the body padding is gone and the room is
+taken block by block instead, `padding-right: var(--c3d-w)` on `.hero`,
+`.section`, `.proj-hero`, `.proj-band`, `.proj-next` and `footer`. Each band
+now spans the window and passes under the strip, whose ground is unfilled, so
+the car drives over the same tint the text beside it sits on. `.nav` moved
+from `right: var(--c3d-w)` to the same padding for the same reason, so its
+surface and bottom rule cross too. The hero's grid mask is recentred on the
+content column with `calc(50% - var(--c3d-w) / 2)`, since the padding widens
+the box the mask is measured from.
+
+Checked headless over CDP (Edge, 1600x1000) rather than the Orca browser:
+sampled the page colour either side of a section boundary at x=600 and x=1560
+and it changes together in both themes (light 250 to 255, dark 15,15,18 to
+9,9,11), hero, footer, project index and a project page, no horizontal
+overflow, no console errors. The throwaway `_probe_3d.html` used to set the
+view mode before load was deleted after.
+
+Not committed.
+
+## 2026-09-18, the road made opaque
+
+Matty: the track was slightly transparent and the section rule could be seen
+through it.
+
+It was. Every road material is a tint with alpha over whatever is behind the
+strip: `.c3d-road` is `--muted-foreground / .55`, the apron `/ .3`, the verge
+`/ .16`. Once the page bands ran under the strip, a `.section` top rule and
+each change of section tint mixed straight into the road. Measured before the
+fix, a column down the road at x=1300 read 175,175,180 on the tinted section,
+165 on the rule and 177 below it.
+
+Fixed with one opaque layer rather than by respecifying every material: a new
+`c3d-base` path, drawn first, one quad a row from the outer edge of one verge
+to the other, filled `hsl(var(--background))`. Every tint above it now mixes
+against that slab. Since the slab is the page's own colour, the road renders
+identically where the page behind is plain, which a scanline across a straight
+confirms unchanged to the pixel (verge 232,232,234, apron 212,212,215, road
+177,177,182, worn line 145,145,149). The tyre barriers sit at `WALL_AT`, well
+inside the verge, so they are covered too.
+
+After: the same column reads a flat 177,177,182 in light and 85,85,91 in dark
+across the boundary, and the rule stops at the road and picks up the other
+side.
+
+`circuit3d.js`: `elBase` layer, `base` quad in the row loop, one `setAttribute`.
+`style.css`: `.c3d-base`.
+
+Not committed.
+
+## 2026-09-18, camera taken higher and the road widened
+
+Matty wanted the view a little more helicopter and the car smaller on the
+track without the track losing its width on screen.
+
+Both come from one pair of numbers. Screen size goes as world size over camera
+distance, so raising `CAM.height` 80 to 100 and `ROAD` 6.2 to 7.8 together,
+the same 1.25, leaves the road the same width in the strip while everything
+sized in its own units, the car above all, shrinks by that factor. `CAM.pitch`
+70 to 76 is the helicopter part. Measured on a straight: the road spanned 98px
+before and 100px after.
+
+Consequences worth knowing:
+
+- The run-off is unchanged in track units, so it is about 13 per cent narrower
+  on screen than it was. A wider circuit with the same run-off beside it.
+- The chequer is still `ROAD / FLAG_COLS`, so its cells grew with the road and
+  come out the same size on screen as before. Nothing to change there.
+- The legs stand at `HALF + KERB_W + 0.5` and the gantries span the road, so
+  they widened with it and their names are still fitted to the board.
+- A higher, steeper camera sees further up the circuit, so a gantry now comes
+  into frame while it is still round a corner, where its name is drawn turned
+  toward vertical. The existing drop rule still catches the genuinely edge-on
+  case. Left as it is: it reads as a sign seen from above, not as a fault.
+- `draw`, `behind` and `samples` left alone. Steeper pitch pulls the far end
+  of the view back in about as much as the extra height pushes it out, and
+  nothing runs out of road in frame at any scroll position checked.
+
+Checked headless in both themes at several scroll positions, home page and a
+project out lap, plus a straight, a corner and a named gantry. Comments in the
+header, the CAM block and the car block updated to the new numbers.
+
+Not committed.

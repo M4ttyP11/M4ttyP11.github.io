@@ -1807,6 +1807,12 @@ a.card:hover .card-more svg { transform: translateX(3px); }
    horizon in shot to draw. The verge carries the edge of the world and the
    page shows through past it. */
 .c3d-ground { fill: none; }
+/* The road is laid on this rather than straight on the page: every material
+   below is a tint with alpha, so without an opaque slab under them they mixed
+   with whatever the page was showing behind the strip and a section rule or a
+   change of section tint read through the road. Page colour, so the road
+   looks no different where the page behind it is plain. */
+.c3d-base { fill: hsl(var(--background)); }
 .c3d-horizon { display: none; }
 .c3d-road { fill: hsl(var(--muted-foreground) / .55); }
 .c3d-edge { fill: hsl(var(--foreground) / .7); }
@@ -1817,22 +1823,24 @@ a.card:hover .card-more svg { transform: translateX(3px); }
 .c3d-kerb-a { fill: hsl(var(--kerb)); }
 .c3d-kerb-b { fill: hsl(0 0% 98%); }
 .c3d-flag { fill: hsl(0 0% 98%); }
+/* The chequer is black and white in both themes, the way a real one is,
+   and the road under it is the same mid grey either way. */
+.c3d-flag-b { fill: hsl(240 6% 13%); }
 .c3d-wall-face { fill: hsl(var(--foreground) / .32); }
 .c3d-wall-top { fill: hsl(var(--foreground) / .5); }
 .c3d-shadow { fill: hsl(0 0% 0% / .28); }
 
-/* Section boards. The one the chip names takes the accent along its top. */
-.c3d-board-panel { fill: hsl(var(--card)); stroke: hsl(var(--border)); stroke-width: .6; }
-.c3d-board-back { fill: hsl(var(--muted-foreground) / .45); }
-.c3d-board-post { fill: hsl(var(--muted-foreground) / .7); }
-.c3d-board-strip { fill: hsl(var(--muted-foreground) / .6); }
-.c3d-board.is-next .c3d-board-strip { fill: hsl(var(--accent)); }
+/* Section gantries. Every face of one is shaded in circuit3d.js from its own
+   normal and filled inline, the way the car's panels are, so there is nothing
+   to colour here: a rule with a fill would override the shading and put the
+   gantry back into flat UI colours. Only the lettering is styled, and its
+   fill is set inline too. */
 .c3d-board-text {
-  fill: hsl(var(--foreground));
   /* Set 100 times too large and scaled down in the transform: see the boards
-     section of circuit3d.js. */
-  font: 600 92px var(--font);
-  letter-spacing: -.5px;
+     section of circuit3d.js. Sign writing, so it is tracked out a little
+     rather than tightened the way a UI label is. */
+  font: 600 88px var(--font);
+  letter-spacing: 2.5px;
 }
 
 /* The Next chip is the one part of the flat map that still earns its place,
@@ -1869,13 +1877,35 @@ html[data-circuit="3d"] .circuit { display: none; }
   .c3d { display: block; }
   /* The strip takes its width off the window first and the page centres in
      what is left, rather than the strip squeezing into whatever gutter a
-     centred container happened to leave. That is what buys it the room. */
-  html[data-circuit="3d"] body { padding-right: var(--c3d-w); }
+     centred container happened to leave. That is what buys it the room.
+
+     The room is taken block by block rather than with padding on the body,
+     so every band that carries a background or a rule still runs the full
+     width of the window and passes under the strip. With the padding on the
+     body they all stopped at the strip's left edge, which left a column of
+     flat page colour down the right that never changed as the alternating
+     sections scrolled past it, and a hard vertical seam where each tinted
+     section ended. The ground in the strip is unfilled, so the band the car
+     is driving over is the same band the text beside it sits on. */
+  html[data-circuit="3d"] .hero,
+  html[data-circuit="3d"] .section,
+  html[data-circuit="3d"] .proj-hero,
+  html[data-circuit="3d"] .proj-band,
+  html[data-circuit="3d"] .proj-next,
+  html[data-circuit="3d"] footer { padding-right: var(--c3d-w); }
   html[data-circuit="3d"] {
     --container: min(1140px, calc(100vw - var(--c3d-w) - 6rem));
   }
-  /* The fixed bar on a project page stops at the strip for the same reason. */
-  html[data-circuit="3d"] .nav { right: var(--c3d-w); }
+  /* The hero's grid is masked from the centre of its own box, which the
+     padding above widens, so the mask is pulled back over the text. */
+  html[data-circuit="3d"] .hero::before {
+    -webkit-mask-image: radial-gradient(ellipse 90% 70% at calc(50% - var(--c3d-w) / 2) 40%, #000 20%, transparent 78%);
+            mask-image: radial-gradient(ellipse 90% 70% at calc(50% - var(--c3d-w) / 2) 40%, #000 20%, transparent 78%);
+  }
+  /* The fixed bar on a project page is inset the same way, by padding rather
+     than by ending early, so its surface and its bottom rule cross the strip
+     with everything else. Its inner row still centres over the text. */
+  html[data-circuit="3d"] .nav { padding-right: var(--c3d-w); }
 }
 
 /* A world that rotates under you is far more motion than a dot on a map. */

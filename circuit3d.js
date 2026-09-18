@@ -22,9 +22,9 @@
    The camera is steep rather than overhead: the track keeps the width, kerbs,
    barriers and run-off of a view from behind the car, but sits where the flat
    map sat and is read the same way. At this angle the ground plane fills the
-   frame, so there is no horizon and no sky, and the section boards lie flat
-   on the run-off, since an upright board is edge on from above and its name
-   cannot be read.
+   frame, so there is no horizon and no sky, and a section is named on a
+   gantry over the road rather than on a board beside it, since a trackside
+   board is edge on from this angle and its name cannot be read.
 
    None of the camera is settled. `tune()` builds the slider panel the
    prototype carried, so the view can still be moved around on the page
@@ -36,8 +36,9 @@
    camera is placed. Everything that draws the road still works off the
    centreline, since the cross section is measured out from it.
 
-   Units are track units, as in the path data: the road is 6.2 across and one
-   unit is about 2.9m.
+   Units are track units, as in the path data: the road is 7.8 across and one
+   unit is about 2.3m. The road is deliberately wide against the path it
+   follows, which is what keeps the car small on it.
    ========================================================================== */
 
 window.Circuit3D = (function () {
@@ -46,29 +47,34 @@ window.Circuit3D = (function () {
   var NS = 'http://www.w3.org/2000/svg';
 
   /* The camera. High, steep and a little behind, so a corner arrives as a
-     shape rather than a wall. These are the numbers the helicopter preset in
-     proto/circuit-heli.html landed on, and tune() below puts the same sliders
-     on the page so they can still be moved. */
+     shape rather than a wall. It started from the helicopter preset in
+     proto/circuit-heli.html and has since been taken higher and steeper.
+     `height` is set against ROAD: the two were raised together, 80 to 100
+     against 6.2 to 7.8, so the road holds its width on screen while the car,
+     which is sized in its own units, gets smaller on it. Moving one without
+     the other changes how wide the road looks. tune() below puts the same
+     sliders on the page so they can still be moved. */
   var CAM = {
-    height: 80,       // above the road
+    height: 100,      // above the road
     back: 25,         // behind the car
-    pitch: 70,        // degrees down
+    pitch: 76,        // degrees down
     fov: 40,          // degrees, vertical
     carY: 52,         // per cent down the strip the car sits
     draw: 220,        // how far ahead the road is drawn
     behind: 140,      // and how far back, which a centred car needs
-    boardTilt: 0,     // degrees up off the ground: 0 lays the name flat
+    boardTilt: 45,    // the banner's lean back off vertical, degrees
     lag: 1,           // how far the camera's heading trails the car's
     smooth: 4,        // chord either side, for the camera's heading
     samples: 130,     // road samples across the drawn length
     fog: 0,           // px of fade at the horizon, which is off the frame
+    gantry: 3.4,     // the beam's underside, above the road
     carScale: 1.4,
     spinRate: 1,
     roll: 1
   };
 
   // The cross section, out from the centreline.
-  var ROAD = 6.2;
+  var ROAD = 7.8;
   var HALF = ROAD / 2;
   var KERB_W = 0.9;
   var EDGE_W = 0.16;
@@ -82,11 +88,48 @@ window.Circuit3D = (function () {
   var TIGHT_R = 18;        // tighter again also takes a tyre barrier
   var NEAR = 0.3;          // near plane
 
-  // Boards beside the track.
-  var BOARD_UP = 0.8;      // panel bottom, above the ground
-  var BOARD_H = 1.7;       // panel height, oversized so it reads in a short band
-  var BOARD_GAP = HALF + KERB_W + 0.5;
+  /* The ends of an out lap. The path itself stops dead at both ends, so the
+     road is carried on straight past them and closed off with a barrier: a
+     run-in behind the start line, a run-out past the flag. Without it the
+     road simply stops mid-air, which is the one place the band gives away
+     that it is a strip and not a circuit. */
+  var OPEN_IN = 18;        // run-in drawn before the start line
+  var OPEN_OUT = 20;       // run-out drawn past the flag
+  var GATE_H = 0.75;       // the barrier closing each end
+  var FLAG_COLS = 6;       // chequer cells across the road, as on the map
+
+  /* Gantries over the track. A section is named on a banner slung under a
+     beam that spans the road on two legs, the way a circuit signs a sector,
+     and the start/finish gets the light rig instead of a name.
+
+     The banner leans back off vertical toward the oncoming car. Upright it
+     would be almost edge on from a camera this steep and the name would be
+     unreadable; at BANNER_TILT its face is within about 25 degrees of square
+     to the view, which is both readable and what a real overhead sign does. */
+  var GANTRY_AT = HALF + KERB_W + 0.5;  // where the legs stand, outside the kerb
+  var LEG_W = 0.18;
+  var BEAM_T = 0.32;       // beam depth, vertically
+  var BEAM_D = 0.36;       // and along the track
+  var BANNER_H = 1.5;
+  var LIGHTS = 5;          // light columns on the start gantry
+  var LIGHT_W = 0.44;
   var TEXT_K = 100;        // text is set this much too large and scaled down
+
+  /* Gantry materials. Fixed colours rather than page tokens, and shaded per
+     face by shade() the way the car's panels are: a sign is a sign in either
+     theme, and a surface that ignores the light is what makes a panel read as
+     a card laid over the view instead of a thing standing in it. */
+  var STEEL = [240, 5, 44];      // the beam and the legs
+  var SIGN = [240, 7, 15];       // the sign board
+  var SIGN_INK = [0, 0, 96];     // its lettering
+  var BAND = [240, 5, 38];       // the band along its foot, off the accent
+  var RIG = [240, 6, 11];        // the start rig
+  var LAMP_OFF = [240, 5, 24];
+  var LAMP_ON = [0, 78, 52];
+  var BOARD_T = 0.11;            // the board's thickness, behind its face
+  // Face normals in gantry space: x across the road, y up, z along it.
+  var UP_N = [0, 1, 0], FRONT_N = [0, 0, -1];
+  var SIDE_P_N = [1, 0, 0], SIDE_N_N = [-1, 0, 0];
 
   var CARBON = [240, 8, 15], TYRE = [240, 6, 8], TREAD = [240, 5, 24], WHITE = [0, 0, 94];
   var WHEEL_SIDES = 12;
@@ -200,6 +243,35 @@ window.Circuit3D = (function () {
       var a = pt(d - span), ax = a.x, ay = a.y;
       var b = pt(d + span);
       return Math.atan2(b.y - ay, b.x - ax);
+    }
+
+    /* Off the ends of an out lap, straight on along the end tangent. Only the
+       road surface and its furniture use this: the car, the camera and the
+       racing line all stay inside the path proper. The tangents are the ones
+       heading() already reports at each end, so the join has no kink. */
+    var endA = null, endB = null;
+    if (!closed) {
+      var qa = pt(0), aa0 = heading(0, 1.2);
+      endA = { x: qa.x, y: qa.y, cos: Math.cos(aa0), sin: Math.sin(aa0), a: aa0 };
+      var qb = pt(total), ab0 = heading(total, 1.2);
+      endB = { x: qb.x, y: qb.y, cos: Math.cos(ab0), sin: Math.sin(ab0), a: ab0 };
+    }
+    var exA = { x: 0, y: 0 }, exB = { x: 0, y: 0 };
+    function ptEx(s, out) {
+      var e = null, off = 0;
+      if (!closed && s < 0) { e = endA; off = s; }
+      else if (!closed && s > total) { e = endB; off = s - total; }
+      if (e) { out.x = e.x + e.cos * off; out.y = e.y + e.sin * off; return out; }
+      var q = pt(s);
+      out.x = q.x; out.y = q.y;
+      return out;
+    }
+    function headEx(s, span) {
+      if (!closed) {
+        if (s < 0) return endA.a;
+        if (s > total) return endB.a;
+      }
+      return heading(s, span);
     }
 
     /* Corners, found the way the flat strip's furnish() finds them: turn per
@@ -340,9 +412,9 @@ window.Circuit3D = (function () {
 
     /* ------------------------------- the car ----------------------------
        Convex solids in car units: z forward, x right, y up, the rear axle
-       near z = -0.7. The car is 1.56 across, so at the default scale it
-       takes just under a third of the 6.2 road; the scale is exaggerated the
-       same way the flat strip's car is.
+       near z = -0.7. The car is 1.56 across, so at the default scale it takes
+       just over a quarter of the 7.8 road; the scale is exaggerated the same
+       way the flat strip's car is.
 
        Each solid is backface culled on its own, which is exact for a convex
        shape, and the solids are drawn furthest first. That order is only
@@ -458,6 +530,15 @@ window.Circuit3D = (function () {
       return node;
     }
     var elGround = layer('rect', 'c3d-ground', { x: '0', width: '100%' });
+    /* The ground the road is laid on, page colour and opaque, from the outer
+       edge of one verge across to the other. Every material above it is a
+       tint carrying its own alpha, and without this they were tints of
+       whatever the page happened to be showing behind the strip, so a section
+       rule or a change of section tint read straight through the road. This
+       slab is what they are mixed against instead. It is the page's own
+       colour, so nothing about the road looks any different where the page
+       behind it is plain. */
+    var elBase = layer('path', 'c3d-base');
     var elVerge = layer('path', 'c3d-verge');
     var elApron = layer('path', 'c3d-apron');
     var elRoad = layer('path', 'c3d-road');
@@ -467,139 +548,214 @@ window.Circuit3D = (function () {
     var elKA = layer('path', 'c3d-kerb-a');
     var elKB = layer('path', 'c3d-kerb-b');
     var elFlag = layer('path', 'c3d-flag');
+    var elFlagB = layer('path', 'c3d-flag-b');
     var elWallF = layer('path', 'c3d-wall-face');
     var elWallT = layer('path', 'c3d-wall-top');
-    var boardLayer = layer('g', 'c3d-board-layer');
     var elFog = layer('rect', null, { x: '0', width: '100%', fill: 'url(#' + id + '-fog)' });
     var elHorizon = layer('line', 'c3d-horizon', { x1: '0', x2: '100%' });
     var elShadow = layer('path', 'c3d-shadow', { filter: 'url(#' + id + '-soft)' });
     var carGroup = layer('g', 'c3d-carbody');
+    /* Gantries last, over the car. A camera above and behind sees the beam
+       before the car under it wherever the two overlap on screen, and one far
+       enough ahead to be further away is by then too near the top of the band
+       to reach the car at all. */
+    var boardLayer = layer('g', 'c3d-board-layer');
     band.appendChild(svg);
     host.appendChild(band);
 
     /* ------------------------------- boards -----------------------------
-       One board per section, standing beside the track and facing back down
-       it: a panel on two posts, a strip along the top that turns accent on
-       the one the Next chip names, and the section name.
+       One gantry per section: a steel beam on two legs spanning the road,
+       and a sign board hung under it, full width between the legs, carrying
+       the section name.
 
-       The panel is projected exactly. The name is plain SVG text laid onto
-       it with the affine transform that fits its top-left, top-right and
-       bottom-left corners, which is close enough to true perspective for
-       something this small, and set 100 times too large then scaled down,
-       since some browsers mishandle font sizes under a pixel.
+       Built the way the car is built, not the way the page's cards are. Every
+       face is a projected quad with a normal, filled by shade() from that
+       normal against the same light the car uses, so a gantry sits in the
+       scene's light instead of floating over it as a panel in UI colours. The
+       beam's top catches the light and its face toward the car falls away,
+       the lit leg is the left one, and the board's bottom edge is a dark
+       sliver that gives it thickness.
 
-       Boards go on the inside of a corner, clear of the kerb, because the
-       tyre barrier takes the outside. On a straight they go on the left. */
+       The name is the one thing that cannot be geometry without a font
+       outline, so it stays SVG text, mapped onto the board by the affine fit
+       of the lettering box's three corners. Over a board this shallow the fit
+       is within about a per cent of true perspective. It is painted in the
+       board's own light, so it dims and lifts with the face it is on rather
+       than sitting at full UI contrast over the top of it, and it is set 100
+       times too large then scaled down, since some browsers mishandle font
+       sizes under a pixel. */
     var BOARDS = [];
     function setBoards(list) {
       BOARDS.forEach(function (b) { b.g.remove(); });
       BOARDS = list.map(function (s) {
-        var at = s.f * total;
-        var corner = cornerAt(at);
         var g = el('g', { 'class': 'c3d-board' });
-        var back = el('path', { 'class': 'c3d-board-back' });
-        var posts = el('path', { 'class': 'c3d-board-post' });
-        var panel = el('path', { 'class': 'c3d-board-panel' });
-        var strip = el('path', { 'class': 'c3d-board-strip' });
+        var faceG = el('g');
         var text = el('text', { 'class': 'c3d-board-text', 'text-anchor': 'middle' });
         text.textContent = s.name;
-        g.appendChild(back); g.appendChild(posts); g.appendChild(panel);
-        g.appendChild(strip); g.appendChild(text);
+        g.appendChild(faceG);
+        g.appendChild(text);
         boardLayer.appendChild(g);
         return {
-          name: s.name, at: at, side: corner ? corner.side : -1, g: g,
-          back: back, posts: posts, panel: panel, strip: strip, text: text,
-          // Width fits the name, measured once at the working size.
-          w: Math.max(3, text.getComputedTextLength() / TEXT_K + 1.2)
+          name: s.name, at: s.f * total, g: g, faceG: faceG, faces: [], text: text,
+          // The one sitting on the start/finish line of a lap carries the
+          // light rig instead of a name, the way a grid start is signed.
+          lights: closed && (s.f < 0.02 || s.f > 0.98),
+          // The lettering box, measured once at the working size.
+          w: Math.max(2.4, text.getComputedTextLength() / TEXT_K + 0.9)
         };
       });
     }
 
-    var bc = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]];
+    var bc = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]];
+    var gtmp = [];
+    for (var gi = 0; gi < 8; gi++) gtmp.push([0, 0, 0]);
+    var faceParts = [];
     function drawBoard(b, s, inRange, isNext) {
-      b.g.setAttribute('class', isNext ? 'c3d-board is-next' : 'c3d-board');
       var p = pt(s), px = p.x, py = p.y, a = heading(s, 1);
       var nx = -Math.sin(a), ny = Math.cos(a);
       var tx = Math.cos(a), ty = Math.sin(a);
-      // Near and far edges of the panel, out from the road. Screen left is
-      // the far edge on the left side and the near edge on the right.
-      var near = b.side * BOARD_GAP, far = b.side * (BOARD_GAP + b.w);
-      var L = b.side < 0 ? far : near, R = b.side < 0 ? near : far;
-      var top = BOARD_UP + BOARD_H, depth = 0.12;
-      /* The panel hinges about the line of its posts. Upright at 90 degrees
-         it is a trackside board, which is what a view from behind the car
-         wants. At 0 it lies flat on the run-off, laid forward along the track
-         so the name reads the way the car points, which is the only way a
-         name reads from above, and is what a circuit does with a sponsor's
-         name anyway. `u` is distance up the panel. */
-      var tilt = CAM.boardTilt * Math.PI / 180;
-      var flat = CAM.boardTilt < 25;
-      var st = Math.sin(tilt), ct = Math.cos(tilt);
-      function bp(off, u, lead, out) {
-        var f = u * ct + lead;
-        return toCam(px + nx * off + tx * f, py + ny * off + ty * f, u * st, out);
+      /* A point on the gantry: `off` across the track, positive to the
+         driver's right, `up` above the road, `lead` along the track, positive
+         ahead of the car. */
+      function gp(off, up, lead, out) {
+        return toCam(px + nx * off + tx * lead, py + ny * off + ty * lead, up, out);
       }
-      bp(L, top, 0, bc[0]);
-      bp(R, top, 0, bc[1]);
-      bp(R, BOARD_UP, 0, bc[2]);
-      bp(L, BOARD_UP, 0, bc[3]);
-      // The same outline a little further down the track, for the panel's
-      // thickness, which shows as the car draws alongside.
-      bp(L, top, depth, bc[4]);
-      bp(R, top, depth, bc[5]);
-      bp(R, BOARD_UP, depth, bc[6]);
-      bp(L, BOARD_UP, depth, bc[7]);
 
-      var visible = inRange && bc[0][2] > NEAR && bc[1][2] > NEAR;
+      var span = GANTRY_AT, beamB = CAM.gantry, beamT = beamB + BEAM_T;
+      var outer = span + LEG_W;
+      var visible = inRange &&
+        gp(-outer, beamT, 0, gtmp[0])[2] > NEAR && gp(outer, beamT, 0, gtmp[1])[2] > NEAR;
       if (!visible) { b.g.setAttribute('display', 'none'); return; }
       b.g.removeAttribute('display');
 
-      var backParts = [], postParts = [], panelParts = [], stripParts = [];
-      // The panel's end toward the road, then its top edge. A flat board has
-      // no thickness worth drawing and nothing to stand on, so the back face
-      // and the posts drop out and it reads as paint on the run-off.
-      if (!flat) {
-        var edgeN = b.side < 0 ? [bc[1], bc[5], bc[6], bc[2]] : [bc[0], bc[4], bc[7], bc[3]];
-        poly(backParts, edgeN);
-        quad(backParts, bc[0], bc[4], bc[5], bc[1]);
-
-        // Posts, a fifth of the way in from each end.
-        var pw = 0.07;
-        [0.2, 0.8].forEach(function (f) {
-          var o = L + (R - L) * f;
-          var q0 = toCam(px + nx * (o - pw), py + ny * (o - pw), 0, [0, 0, 0]);
-          var q1 = toCam(px + nx * (o + pw), py + ny * (o + pw), 0, [0, 0, 0]);
-          var q2 = bp(o + pw, BOARD_UP, 0, [0, 0, 0]);
-          var q3 = bp(o - pw, BOARD_UP, 0, [0, 0, 0]);
-          quad(postParts, q0, q1, q2, q3);
-        });
+      /* A face, lit from its own normal in gantry space (x across, y up, z
+         along the track) and hairlined in its own colour, the way the car's
+         faces are, so no seam shows between them. */
+      var used = 0;
+      function emit(col, n, q0, q1, q2, q3) {
+        faceParts.length = 0;
+        quad(faceParts, q0, q1, q2, q3);
+        if (!faceParts.length) return;
+        var node = b.faces[used];
+        if (!node) {
+          node = el('path', { 'stroke-linejoin': 'round', 'stroke-width': '0.4' });
+          b.faceG.appendChild(node);
+          b.faces.push(node);
+        }
+        var fill = shade(col, Math.max(0, dot(n, LIGHT)));
+        node.setAttribute('d', faceParts.join(''));
+        node.setAttribute('fill', fill);
+        node.setAttribute('stroke', fill);
+        used++;
       }
-      quad(panelParts, bc[0], bc[1], bc[2], bc[3]);
 
-      // The strip along the top edge, which flat is the line the name sits on.
-      var sh = 0.14;
-      var s0 = bp(L, top - sh, 0, [0, 0, 0]);
-      var s1 = bp(R, top - sh, 0, [0, 0, 0]);
-      quad(stripParts, bc[0], bc[1], s1, s0);
+      // A leg each side, outside the kerb: the face toward the car and the
+      // face toward the track, which is the pair a view from behind sees.
+      [-1, 1].forEach(function (sd) {
+        var o = sd * span, inner = o - sd * LEG_W / 2;
+        gp(o - LEG_W / 2, beamB, -LEG_W / 2, gtmp[0]);
+        gp(o + LEG_W / 2, beamB, -LEG_W / 2, gtmp[1]);
+        gp(o + LEG_W / 2, 0, -LEG_W / 2, gtmp[2]);
+        gp(o - LEG_W / 2, 0, -LEG_W / 2, gtmp[3]);
+        emit(STEEL, FRONT_N, gtmp[0], gtmp[1], gtmp[2], gtmp[3]);
+        gp(inner, beamB, -LEG_W / 2, gtmp[0]);
+        gp(inner, beamB, LEG_W / 2, gtmp[1]);
+        gp(inner, 0, LEG_W / 2, gtmp[2]);
+        gp(inner, 0, -LEG_W / 2, gtmp[3]);
+        emit(STEEL, sd < 0 ? SIDE_P_N : SIDE_N_N, gtmp[0], gtmp[1], gtmp[2], gtmp[3]);
+      });
 
-      b.back.setAttribute('d', backParts.join(''));
-      b.posts.setAttribute('d', postParts.join(''));
-      b.panel.setAttribute('d', panelParts.join(''));
-      b.strip.setAttribute('d', stripParts.join(''));
+      // The beam: the face turned back down the track toward the car, then
+      // its top, which is most of what a camera this steep sees of it.
+      gp(-outer, beamT, -BEAM_D / 2, gtmp[0]);
+      gp(outer, beamT, -BEAM_D / 2, gtmp[1]);
+      gp(outer, beamB, -BEAM_D / 2, gtmp[2]);
+      gp(-outer, beamB, -BEAM_D / 2, gtmp[3]);
+      emit(STEEL, FRONT_N, gtmp[0], gtmp[1], gtmp[2], gtmp[3]);
+      gp(-outer, beamT, BEAM_D / 2, gtmp[4]);
+      gp(outer, beamT, BEAM_D / 2, gtmp[5]);
+      emit(STEEL, UP_N, gtmp[0], gtmp[1], gtmp[5], gtmp[4]);
 
-      // Text: map a box of (w by BOARD_H) * TEXT_K onto the panel's corners.
+      /* The board under the beam. It hangs from the beam's underside and runs
+         the full span between the legs, so it is the gantry's own panel
+         rather than a card hung in the middle of it, and it leans back toward
+         the car by CAM.boardTilt. `u` is the distance down the face from the
+         hinge, `back` the distance behind the face along its normal, which is
+         what gives the board its thickness. */
+      var lean = CAM.boardTilt * Math.PI / 180, sl = Math.sin(lean), cl = Math.cos(lean);
+      var ph = b.lights ? LIGHT_W + 0.34 : BANNER_H;
+      var pw = 2 * span;
+      var faceN = [0, sl, -cl];            // the board's face, toward the car
+      var edgeN = [0, -cl, -sl];           // its bottom edge, on down the face
+      function fp(off, u, back, out) {
+        return gp(off, beamB - u * cl - back * sl, -u * sl + back * cl, out);
+      }
+      fp(-pw / 2, 0, 0, bc[0]);
+      fp(pw / 2, 0, 0, bc[1]);
+      fp(pw / 2, ph, 0, bc[2]);
+      fp(-pw / 2, ph, 0, bc[3]);
+      emit(b.lights ? RIG : SIGN, faceN, bc[0], bc[1], bc[2], bc[3]);
+      fp(-pw / 2, ph, BOARD_T, gtmp[0]);
+      fp(pw / 2, ph, BOARD_T, gtmp[1]);
+      emit(b.lights ? RIG : SIGN, edgeN, bc[3], bc[2], gtmp[1], gtmp[0]);
+
+      if (b.lights) {
+        // Five lights across the rig, the way a grid start is signed. They
+        // read as the marking for the line the car is crossing, so the rig
+        // carries no name.
+        var cw = (pw - 1.6) / LIGHTS, u0 = (ph - LIGHT_W) / 2;
+        for (var i = 0; i < LIGHTS; i++) {
+          var o0 = -(pw - 1.6) / 2 + i * cw + (cw - LIGHT_W) / 2;
+          fp(o0, u0, -0.02, gtmp[0]);
+          fp(o0 + LIGHT_W, u0, -0.02, gtmp[1]);
+          fp(o0 + LIGHT_W, u0 + LIGHT_W, -0.02, gtmp[2]);
+          fp(o0, u0 + LIGHT_W, -0.02, gtmp[3]);
+          emit(isNext ? LAMP_ON : LAMP_OFF, faceN, gtmp[0], gtmp[1], gtmp[2], gtmp[3]);
+        }
+      } else {
+        /* A band across the foot of the board, which takes the livery on the
+           section the Next chip names, the way a sector board is coloured. It
+           is held clear of the bottom edge so it reads as paint on the board
+           rather than a rule underlining the name, and the livery is knocked
+           back off the car's, which would otherwise be the brightest thing in
+           the frame. */
+        var band = isNext ? [LIVERY[0], LIVERY[1] * 0.82, LIVERY[2] * 0.76] : BAND;
+        fp(-pw / 2, ph - 0.34, -0.02, gtmp[0]);
+        fp(pw / 2, ph - 0.34, -0.02, gtmp[1]);
+        fp(pw / 2, ph - 0.18, -0.02, gtmp[2]);
+        fp(-pw / 2, ph - 0.18, -0.02, gtmp[3]);
+        emit(band, faceN, gtmp[0], gtmp[1], gtmp[2], gtmp[3]);
+      }
+
+      for (var k = used; k < b.faces.length; k++) b.faces[k].setAttribute('d', '');
+
+      if (b.lights) { b.text.setAttribute('display', 'none'); return; }
+
+      /* The name, on the board and in the board's light. Its box is the
+         measured width of the lettering, centred on the board and clear of
+         the livery band, and it is that box's corners the text is fitted to
+         rather than the whole board's, so a long name scales down instead of
+         running off the ends. */
+      var tw = Math.min(b.w, pw - 0.6), th = ph - 0.46;
+      fp(-tw / 2, 0.06, -0.03, bc[0]);
+      fp(tw / 2, 0.06, -0.03, bc[1]);
+      fp(-tw / 2, 0.06 + th, -0.03, bc[3]);
       var tlx = sx(bc[0]), tly = sy(bc[0]);
       var trx = sx(bc[1]), trY = sy(bc[1]);
       var blx = sx(bc[3]), bly = sy(bc[3]);
-      // Too small to read, or so close that the affine fit blows the name up
-      // across the whole frame as the car draws level with it. The panel and
-      // its posts still read fine, so only the text goes.
-      if (Math.hypot(blx - tlx, bly - tly) < 7 || Math.hypot(trx - tlx, trY - tly) > cam.w * 0.8) {
+      /* Three ways the name has to go, though the gantry itself still reads
+         fine in all of them: too small, so close that the affine fit blows it
+         up across the whole frame as the car passes under, or round enough of
+         a corner that the board is edge on and the name would come out
+         standing on its side. */
+      var wpx = Math.hypot(trx - tlx, trY - tly), hpx = Math.hypot(blx - tlx, bly - tly);
+      if (hpx < 5 || wpx > cam.w * 0.9 || wpx < hpx * (tw / th) * 0.4) {
         b.text.setAttribute('display', 'none');
         return;
       }
       b.text.removeAttribute('display');
-      var W = b.w * TEXT_K, Hh = BOARD_H * TEXT_K;
+      var W = b.w * TEXT_K, Hh = th * TEXT_K;
+      b.text.setAttribute('fill', shade(SIGN_INK, Math.max(0, dot(faceN, LIGHT))));
       b.text.setAttribute('x', (W / 2).toFixed(1));
       b.text.setAttribute('y', (Hh * 0.74).toFixed(1));
       b.text.setAttribute('transform', 'matrix(' +
@@ -638,13 +794,53 @@ window.Circuit3D = (function () {
     var tmp = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]];
 
     function flagQuad(parts, sa, sb) {
-      var pa = pt(sa), ax = pa.x, ay = pa.y, aa = heading(sa, 1);
-      var pb = pt(sb), bx = pb.x, by = pb.y, ba = heading(sb, 1);
+      var pa = ptEx(sa, exA), ax = pa.x, ay = pa.y, aa = headEx(sa, 1);
+      var pb = ptEx(sb, exB), bx = pb.x, by = pb.y, ba = headEx(sb, 1);
       toCam(ax + Math.sin(aa) * HALF, ay - Math.cos(aa) * HALF, 0, tmp[0]);
       toCam(bx + Math.sin(ba) * HALF, by - Math.cos(ba) * HALF, 0, tmp[1]);
       toCam(bx - Math.sin(ba) * HALF, by + Math.cos(ba) * HALF, 0, tmp[2]);
       toCam(ax - Math.sin(aa) * HALF, ay + Math.cos(aa) * HALF, 0, tmp[3]);
       quad(parts, tmp[0], tmp[1], tmp[2], tmp[3]);
+    }
+
+    /* The chequered band, two rows of square cells across the road, laid out
+       the same way the flat map lays out its start line so the two views read
+       as the same marking. `s0` is the near edge of the first row. */
+    function chequer(light, dark, s0) {
+      var cell = ROAD / FLAG_COLS, r, c;
+      for (r = 0; r < 2; r++) {
+        var pa = ptEx(s0 + r * cell, exA), ax = pa.x, ay = pa.y;
+        var aa = headEx(s0 + r * cell, 1), anx = -Math.sin(aa), any = Math.cos(aa);
+        var pb = ptEx(s0 + (r + 1) * cell, exB), bx = pb.x, by = pb.y;
+        var ba = headEx(s0 + (r + 1) * cell, 1), bnx = -Math.sin(ba), bny = Math.cos(ba);
+        for (c = 0; c < FLAG_COLS; c++) {
+          var o0 = -HALF + c * cell, o1 = o0 + cell;
+          toCam(ax + anx * o0, ay + any * o0, 0, tmp[0]);
+          toCam(bx + bnx * o0, by + bny * o0, 0, tmp[1]);
+          toCam(bx + bnx * o1, by + bny * o1, 0, tmp[2]);
+          toCam(ax + anx * o1, ay + any * o1, 0, tmp[3]);
+          quad((r + c) % 2 ? dark : light, tmp[0], tmp[1], tmp[2], tmp[3]);
+        }
+      }
+    }
+
+    /* A barrier straight across the track, closing off an end of an out lap:
+       the face toward the car and its top, in the same colours as the tyre
+       barriers round a corner. `dir` is the way its thickness runs, away from
+       the track in both cases. */
+    function gate(faces, tops, s, dir) {
+      var p = ptEx(s, exA), a = headEx(s, 1);
+      var nx = -Math.sin(a), ny = Math.cos(a);
+      var fx = Math.cos(a) * WALL_T * dir, fy = Math.sin(a) * WALL_T * dir;
+      var o0 = OFFS[0], o1 = OFFS[OFFS.length - 1];
+      toCam(p.x + nx * o0, p.y + ny * o0, 0, w1);
+      toCam(p.x + nx * o1, p.y + ny * o1, 0, w2);
+      toCam(p.x + nx * o1, p.y + ny * o1, GATE_H, w3);
+      toCam(p.x + nx * o0, p.y + ny * o0, GATE_H, w4);
+      quad(faces, w1, w2, w3, w4);
+      toCam(p.x + fx + nx * o1, p.y + fy + ny * o1, GATE_H, w5);
+      toCam(p.x + fx + nx * o0, p.y + fy + ny * o0, GATE_H, w6);
+      quad(tops, w4, w3, w5, w6);
     }
 
     function drawCar() {
@@ -791,9 +987,9 @@ window.Circuit3D = (function () {
       for (k = 0; k <= n; k++) {
         var r = row(k), s = s0 + k * step;
         r.s = s;
-        var q = pt(s);
+        var q = ptEx(s, exA);
         r.x = q.x; r.y = q.y;
-        var a = heading(s, Math.min(step, 1));
+        var a = headEx(s, Math.min(step, 1));
         r.nx = -Math.sin(a); r.ny = Math.cos(a);
         for (j = 0; j < OFFS.length; j++) {
           toCam(r.x + r.nx * OFFS[j], r.y + r.ny * OFFS[j], 0, r.pts[j]);
@@ -805,14 +1001,19 @@ window.Circuit3D = (function () {
 
       // Far to near, so later quads paint over earlier ones.
       var road = [], edge = [], ka = [], kb = [], wf = [], wt = [];
-      var apron = [], verge = [], rline = [], rubber = [];
+      var apron = [], verge = [], rline = [], rubber = [], base = [];
       for (k = n - 1; k >= 0; k--) {
         var R0 = rows[k], R1 = rows[k + 1];
-        // Off the ends of an out lap there is no road: the pit exit and the
-        // flag are where it starts and stops.
-        if (!closed && (R1.s <= 0 || R0.s >= total)) continue;
+        // An out lap's road runs on past both ends of the path, as far as the
+        // barrier that closes each one.
+        if (!closed && (R1.s <= -OPEN_IN || R0.s >= total + OPEN_OUT)) continue;
         var A = R0.pts, B = R1.pts;
         var idx = Math.round(R0.s / step);
+        var mid = (R0.s + R1.s) / 2;
+        // The run-in and the run-out are approach road, not racing surface,
+        // so they carry no worn line, no rubber and no kerbs.
+        var onLap = closed || (mid > 0 && mid < total);
+        quad(base, A[0], B[0], B[9], A[9]);
         quad(verge, A[0], B[0], B[1], A[1]);
         quad(verge, A[8], B[8], B[9], A[9]);
         quad(apron, A[1], B[1], B[2], A[2]);
@@ -820,10 +1021,10 @@ window.Circuit3D = (function () {
         quad(road, A[3], B[3], B[6], A[6]);
         quad(edge, A[3], B[3], B[4], A[4]);
         quad(edge, A[5], B[5], B[6], A[6]);
-        var corner = cornerAt((R0.s + R1.s) / 2);
+        var corner = onLap ? cornerAt(mid) : null;
         // The line worn into the road, darker again through a corner, where
         // the cars are hardest on it.
-        quad(rline, R0.lpts[0], R1.lpts[0], R1.lpts[1], R0.lpts[1]);
+        if (onLap) quad(rline, R0.lpts[0], R1.lpts[0], R1.lpts[1], R0.lpts[1]);
         if (corner) quad(rubber, R0.lpts[0], R1.lpts[0], R1.lpts[1], R0.lpts[1]);
         if (corner) {
           var into = idx % 2 ? kb : ka;
@@ -844,6 +1045,16 @@ window.Circuit3D = (function () {
           }
         }
       }
+      /* The two ends of an out lap. A barrier across the track closes each
+         one, far enough out that the road is still running when it reaches
+         them. Drawn after the loop so they sit over the tyre barriers. */
+      if (!closed) {
+        var gs = -OPEN_IN, ge = total + OPEN_OUT;
+        if (gs > d - CAM.behind && gs < d + CAM.draw) gate(wf, wt, gs, -1);
+        if (ge > d - CAM.behind && ge < d + CAM.draw) gate(wf, wt, ge, 1);
+      }
+
+      elBase.setAttribute('d', base.join(''));
       elRoad.setAttribute('d', road.join(''));
       elVerge.setAttribute('d', verge.join(''));
       elApron.setAttribute('d', apron.join(''));
@@ -855,12 +1066,15 @@ window.Circuit3D = (function () {
       elWallF.setAttribute('d', wf.join(''));
       elWallT.setAttribute('d', wt.join(''));
 
-      // Start/finish: a band across the road at every multiple of the lap,
-      // or at the flag alone on an out lap.
-      var flag = [];
+      /* Start/finish: a chequered band across the road at every multiple of
+         the lap, or at the flag alone on an out lap, which also gets a plain
+         line at its start so both ends of it are marked. */
+      var flag = [], flagB = [], cell = ROAD / FLAG_COLS;
       var mark = closed ? Math.floor((d + CAM.draw) / total) * total : total;
-      if (mark >= d - CAM.behind - 2 && mark <= d + CAM.draw) flagQuad(flag, mark - 0.35, mark + 0.35);
+      if (mark >= d - CAM.behind - 2 && mark <= d + CAM.draw) chequer(flag, flagB, mark - cell);
+      if (!closed && 0 >= d - CAM.behind - 2 && 0 <= d + CAM.draw) flagQuad(flag, -0.3, 0.3);
       elFlag.setAttribute('d', flag.join(''));
+      elFlagB.setAttribute('d', flagB.join(''));
 
       // Section boards. The nearest one ahead takes the accent, which is the
       // one the Next chip names.
@@ -929,7 +1143,8 @@ window.Circuit3D = (function () {
     ['carY',      'Car on screen, %',  10,  100, 1,    'cam'],
     ['draw',      'Draw ahead',        20,  500, 5,    'cam'],
     ['behind',    'Draw behind',       0,   400, 5,    'cam'],
-    ['boardTilt', 'Board tilt, deg',   0,   90,  1,    'cam'],
+    ['boardTilt', 'Banner lean, deg',  0,   85,  1,    'cam'],
+    ['gantry',    'Gantry height',     1.5, 9,   0.1,  'cam'],
     ['lag',       'Camera lag',        0,   12,  0.1,  'cam'],
     ['smooth',    'Heading smoothing', 0.5, 20,  0.5,  'cam'],
     ['carScale',  'Car scale',         0.3, 4,   0.05, 'cam'],
