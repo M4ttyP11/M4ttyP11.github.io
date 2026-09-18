@@ -7,12 +7,67 @@
   var yearEl = document.getElementById('year');
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
+  /* -----------------------------------------------------------------------
+     Theme switch
+
+     The new theme arrives as a circle growing out of the button, done with
+     the View Transitions API: the page is snapshotted either side of the
+     flip and the incoming snapshot is clipped to an expanding circle. The
+     radius is the distance from the button to the furthest corner, so the
+     wipe finishes exactly as it clears the screen. 820ms: slow enough to
+     watch cross the page, short enough not to hold up a second click.
+
+     Without that API, or with reduced motion asked for, the flip is plain
+     and `.theme-anim` cross-fades the colours instead. Either way the same
+     `apply` runs, so the stored value never depends on the animation.
+     --------------------------------------------------------------------- */
   var toggle = document.getElementById('themeToggle');
   if (toggle) {
     toggle.addEventListener('click', function () {
       var next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-      document.documentElement.dataset.theme = next;
-      localStorage.setItem('theme', next);
+      var slow = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      function apply() {
+        document.documentElement.dataset.theme = next;
+        try { localStorage.setItem('theme', next); } catch (err) { /* private mode */ }
+      }
+
+      if (slow || typeof document.startViewTransition !== 'function') {
+        var root = document.documentElement;
+        if (!slow) {
+          root.classList.add('theme-anim');
+          clearTimeout(toggle._themeAnim);
+          toggle._themeAnim = setTimeout(function () {
+            root.classList.remove('theme-anim');
+          }, 760);
+        }
+        apply();
+        return;
+      }
+
+      var box = toggle.getBoundingClientRect();
+      var x = box.left + box.width / 2;
+      var y = box.top + box.height / 2;
+      var reach = Math.hypot(
+        Math.max(x, window.innerWidth - x),
+        Math.max(y, window.innerHeight - y)
+      );
+
+      document.startViewTransition(apply).ready.then(function () {
+        document.documentElement.animate(
+          {
+            clipPath: [
+              'circle(0px at ' + x + 'px ' + y + 'px)',
+              'circle(' + reach + 'px at ' + x + 'px ' + y + 'px)'
+            ]
+          },
+          {
+            duration: 820,
+            easing: 'cubic-bezier(.16, 1, .3, 1)',
+            pseudoElement: '::view-transition-new(root)'
+          }
+        );
+      });
     });
   }
 
@@ -82,6 +137,42 @@
       });
     }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
     items.forEach(function (el) { io.observe(el); });
+  }
+
+  /* ---------------------------------------------------------------------
+     Pointer light on card surfaces
+
+     Writes --mx/--my on whichever card the pointer is over, which is where
+     the radial highlight in the TACTILE SURFACES block puts its centre. One
+     delegated listener rather than one per card, coalesced into a frame so
+     a move never costs more than a style write. Skipped for touch and for
+     reduced motion, where the CSS default of dead centre applies.
+     --------------------------------------------------------------------- */
+  var fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  if (fine && !reduce) {
+    var litCard = null, litX = 0, litY = 0, litQueued = false;
+
+    function paintLight() {
+      litQueued = false;
+      if (!litCard) return;
+      var r = litCard.getBoundingClientRect();
+      litCard.style.setProperty('--mx', (litX - r.left).toFixed(1) + 'px');
+      litCard.style.setProperty('--my', (litY - r.top).toFixed(1) + 'px');
+    }
+
+    document.addEventListener('pointermove', function (e) {
+      var card = e.target.closest
+        ? e.target.closest('.card, .paper, .placement, .proj-next-card')
+        : null;
+      if (card !== litCard && litCard) {
+        litCard.style.removeProperty('--mx');
+        litCard.style.removeProperty('--my');
+      }
+      litCard = card;
+      if (!card) return;
+      litX = e.clientX; litY = e.clientY;
+      if (!litQueued) { litQueued = true; requestAnimationFrame(paintLight); }
+    }, { passive: true });
   }
 
   // Removes the curtain from the layout once every intro animation has settled.

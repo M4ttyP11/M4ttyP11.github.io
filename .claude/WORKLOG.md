@@ -1771,3 +1771,143 @@ The local `main` in the parent checkout at `C:/Users/Matty/orca/
 M4ttyP11.github.io` is still on `65ba340`. It is checked out in that worktree
 so nothing here can move it: it needs a `git pull` there. GitHub Pages builds
 off `origin/main`, which is current.
+
+## 2026-09-18, professional-makeover worktree created
+
+New worktree at `C:/Users/Matty/orca/workspaces/M4ttyP11.github.io/
+professional-makeover`, branch `M4ttyP11/professional-makeover`, based on
+`origin/main` at `00f1735`. Created through the Orca CLI, no parent lineage.
+
+`.claude/BRIEF.md` rewritten for this worktree: the job is making the site
+read as a graduate aerodynamics portfolio to a hiring manager giving it
+ninety seconds.
+
+Open: the scope itself. The brief lists three readings of "professional"
+(visual restraint, content credibility, mechanics such as print/meta/a11y/
+perf) and nothing should change until Matty says which he means. The circuit
+widget's fate is the other open call.
+
+## 2026-09-18, motion layer, part one and two
+
+Matty's brief for this worktree shifted: before the professional-makeover
+scope questions get answered, he wants the site to feel alive, with the
+shadcnspace templates as the reference. Everything reacts, subtly, nothing
+obnoxious. Agreed to go one layer at a time and confirm each.
+
+Layer one, tactile surfaces (`style.css`, TACTILE SURFACES block):
+
+- Three motion tokens on `:root`: `--ease-out`, `--ease-spring`,
+  `--ease-press`. Everything new runs on these, so the page has one feel.
+- A pointer-tracked accent light on `.card`, `.paper`, `.placement` and
+  `.proj-next-card`, an `::after` radial gradient centred on `--mx/--my`.
+  `site.js` writes those from one delegated `pointermove`, coalesced to a
+  frame, skipped for coarse pointers and reduced motion (the CSS default
+  centres the light, so it degrades to a plain highlight).
+- Press states: link-cards, `.btn` and the hero icon links drop and shrink on
+  `:active` fast, spring back on release. Buttons lift with a shadow on
+  hover, primary gets a coloured glow.
+- The `.reveal` transition was retuned to the same curves, because it sits
+  later in the file and its `transform .2s` was flattening the hover spring.
+
+Layer two, reactive detail (`style.css`, REACTIVE DETAIL block, placed after
+everything it touches so it wins on the cascade without editing those rules):
+
+- Nav links get an accent rule wiping out from the left, desktop only, since
+  below 721px the links are full-width rows in a panel.
+- Theme and burger toggles lift, press, and the theme icon rotates 18°.
+- Tags and pills lift individually, so a row of them ripples under the
+  pointer.
+- `.stat` had no hover at all: now lifts, and the number scales with it.
+- Card and paper images push in on hover. This needed `overflow: hidden` on
+  `.card`, checked on the projects index: the images clip to the 12px radius
+  and nothing else was relying on overflow.
+- Timeline rows step right (no markup uses `.timeline` today, kept anyway).
+- Button icons: a trailing arrow moves in its direction, a leading icon only
+  swells. CSS cannot tell the two apart, so the three leading icons carry a
+  new `ico-lead` class (`index.html`, `f1-lap-time-simulator.html`,
+  `retroreflective-piv.html`).
+
+Verified live in Orca's browser against a local server. Worth knowing: port
+8731 already had three servers bound to it from other sessions and was
+serving a `style.css` from a different checkout, so previews here run on
+8742 with `allow_reuse_address = False` and `Cache-Control: no-store`.
+
+Not committed. Next layer discussed but not started: staggered scroll
+reveals, and a cross-fade on navigation between pages.
+
+## 2026-09-18, cards grow in layout rather than scaling
+
+Matty on the hover pass: the card should grow and take room from its
+neighbours, and nothing inside it should distort.
+
+So the growth is now real layout, not a transform. New GROWING GRIDS block in
+`style.css`: `.major-grid` and any `.cards` grid holding exactly three
+children animate `grid-template-columns` on hover, the hovered column going
+1fr to 1.16fr and the two beside it to .92fr, over .5s on `--ease-out`.
+Measured on the projects index: 366/366/366 at rest, 425/337/337 held. The
+type reflows at its proper size and the picture, clipped by the card, shows
+more of itself, so nothing is stretched.
+
+The image scale on `.card` and `.paper` hover is gone for the same reason.
+The portrait in the hero keeps its zoom, it is not a card.
+
+Gated to min-width 961px, fine pointers and no-preference motion: below that
+both grids stack, and without the transition the push would be a jump. The
+hover lift drops to 2px now that width carries the growth.
+
+Open: whether 1.16fr is the right amount, and that a wider card is also a
+taller one, so the row grows and the section below shifts a little.
+
+## 2026-09-18, card growth moved off the layout
+
+The grid-template-columns version was wrong: real growth reflows the card's
+own text and changes the row height, so the page below moved. Replaced by a
+CARD LIFT block that does it with transforms only.
+
+`.cards .card:hover` and `.major-grid .paper:hover` scale to 1.035 on
+`--ease-spring`, take `z-index: 3` and a deeper shadow, so the card sits
+forward of the page and overlaps the gap. Siblings go to `scale(.985)` and
+`opacity: .72`, which is what makes the hovered one read as coming forward
+without anything being pushed. Measured on the home page with a real hover:
+columns still 366/366/366, section below still at 2964, document height still
+5871. No layout shift at all.
+
+The old approach is written into the block's comment so it does not get
+tried again.
+
+## 2026-09-18, theme switch animated
+
+The toggle was a straight swap: `display: none` on whichever icon was not in
+use, and an instant repaint of the page.
+
+Now two things happen. The icons rotate past each other in the button, 80°
+and a scale to .4 on the way out, held out of sight by opacity rather than
+`display`, which cannot animate. Hovering turns whichever icon is on show,
+scoped per theme so the hidden one keeps the rotation parking it off screen.
+
+And the new theme arrives as a circle growing from the button. `site.js`
+flips the theme inside `document.startViewTransition` and animates
+`clip-path` on `::view-transition-new(root)`, radius set to the distance
+from the button to the furthest corner so the wipe lands as it clears the
+screen, 560ms on the standard out curve. The default cross-fade on the two
+snapshots is turned off in CSS or it would fight the wipe: confirmed in the
+browser that the only animations running are the group no-op and the
+clip-path.
+
+Fallbacks: no View Transitions API means a `.theme-anim` class that lends
+every element a 450ms colour transition and is taken off again after, so
+nothing carries a permanent `!important` around. Reduced motion flips
+instantly. `localStorage` is wrapped in try/catch now, private mode was
+throwing past the theme write.
+
+Verified: click flips `data-theme` and the stored value, icon opacities
+swap, page repaints to white. The float button on the home page wipes from
+the bottom left corner, the nav button on project pages from the top right.
+
+## 2026-09-18, theme wipe slowed
+
+Matty asked for it slower. Wipe 560ms to 820ms, icon rotation .55s to .75s,
+icon fade .3s to .4s, and the no-View-Transitions colour cross-fade .45s to
+.7s with the class coming off at 760ms instead of 500ms. Caught mid-flight in
+a screenshot: the old theme still holding the far corner while the new one
+covers the rest.
