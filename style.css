@@ -640,10 +640,36 @@ figcaption {
 
 /* ------------------------------- CONTACT -------------------------------- */
 
+/* Just a label and three buttons, so it takes far less room than a section
+   with a heading and body. */
+#contact { padding-block: clamp(2.75rem, 7vh, 4rem); }
 .contact { text-align: center; max-width: 44rem; margin-inline: auto; }
-.contact h2 { max-width: 20ch; margin-inline: auto; text-wrap: balance; }
-.contact .section-sub { max-width: 46ch; margin-inline: auto; }
-.contact .hero-actions { justify-content: center; }
+.contact .eyebrow { margin-bottom: 0; }
+.contact .hero-actions { justify-content: center; margin-top: 1rem; }
+
+/* The email button and its copy button sit as one pair, closer together
+   than the gap between the pair and the other buttons. */
+.copy-group { display: inline-flex; gap: .35rem; }
+.btn-icon { padding: 0 .68rem; aspect-ratio: 1; justify-content: center; }
+.btn-icon[hidden] { display: none; }
+.copy-email { position: relative; }
+.copy-email svg { transition: opacity .2s var(--ease-out), transform .3s var(--ease-spring); }
+.copy-email .ico-done {
+  position: absolute; inset: 0; margin: auto;
+  opacity: 0; transform: scale(.5);
+  color: hsl(var(--accent));
+}
+.copy-email.copied .ico-copy { opacity: 0; transform: scale(.5); }
+.copy-email.copied .ico-done { opacity: 1; transform: none; }
+.copy-email.copied { border-color: hsl(var(--accent) / .6); }
+/* Outranks the generic `.btn:hover svg` nudge further down: a copy icon is
+   not an arrow, so it swells like a leading icon instead. */
+.btn.copy-email:hover .ico-copy { transform: scale(1.08); }
+.btn.copy-email:not(.copied) .ico-done { transform: scale(.5); }
+.copy-status {
+  position: absolute; width: 1px; height: 1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
 
 /* -------------------------------- FOOTER -------------------------------- */
 
@@ -684,6 +710,42 @@ footer { border-top: 1px solid hsl(var(--border)); padding: 2rem 0; }
   box-shadow: var(--shadow-lg);
 }
 .paper + .paper { margin-top: 1.25rem; }
+
+/* A light running round the edge of the lead project only, so it reads as
+   the one to open first. The ring is the .beam span's padding, cut out with
+   an exclude mask. The light is a train of small segments that site.js puts
+   in the span, each sent round an offset-path a few pixels behind the one
+   before and a little fainter, so the tail follows the ring round a corner.
+   One long gradient bar could not: it pivots about its centre at a corner,
+   its head runs off the end of the ring, and the light seems to stop there.
+   Distances run in px behind a percentage, and a closed path wraps, so the
+   spacing holds whatever size the card is. The card's overflow clips at its
+   padding edge, so the ring sits just inside the border rather than on it.
+   Browsers without offset-path rect() get no beam at all. */
+.beam { display: none; }
+@supports (offset-path: rect(0 auto auto 0)) {
+  .beam {
+    display: block;
+    position: absolute; inset: 0;
+    padding: 1.5px;
+    border-radius: inherit;
+    pointer-events: none;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  }
+  .beam i {
+    position: absolute;
+    width: 5px; height: 5px;
+    background: hsl(var(--accent));
+    offset-path: rect(0 auto auto 0 round var(--radius));
+    animation: beam 12s linear infinite;
+  }
+}
+@keyframes beam {
+  from { offset-distance: calc(0% - var(--lag)); }
+  to   { offset-distance: calc(100% - var(--lag)); }
+}
 
 .paper-title {
   font-size: clamp(1.3rem, 2.4vw, 1.7rem);
@@ -1277,17 +1339,21 @@ html.theme-anim .theme-toggle .moon {
 .reveal {
   transition: opacity .7s var(--ease-out),
               translate .7s var(--ease-out),
+              filter .7s var(--ease-out),
               transform .35s var(--ease-spring),
               border-color .25s var(--ease-out),
               box-shadow .35s var(--ease-out);
 }
-.js .reveal { opacity: 0; translate: 0 18px; }
-.js .reveal.in { opacity: 1; translate: none; }
+/* The blur comes into focus with the fade. It is dropped to `none` once in,
+   not left at blur(0), so a revealed card does not keep a filter layer. */
+.js .reveal { opacity: 0; translate: 0 18px; filter: blur(6px); }
+.js .reveal.in { opacity: 1; translate: none; filter: none; }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { transition: none !important; animation: none !important; }
-  .js .reveal { opacity: 1; translate: none; }
+  .js .reveal { opacity: 1; translate: none; filter: none; }
+  .beam { display: none !important; }
   .preload, [data-loading="true"] .preload { display: none; }
 }
 

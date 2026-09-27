@@ -175,6 +175,52 @@
     }, { passive: true });
   }
 
+  /* ---------------------------------------------------------------------
+     Copy email
+
+     A mailto link opens nothing useful for someone on webmail, so the
+     address can also be copied. The button ships hidden and is only shown
+     where the clipboard API exists, so no one sees a button that fails.
+     The tick holds for 1.6s, and the status span tells a screen reader.
+     --------------------------------------------------------------------- */
+  if (navigator.clipboard && window.isSecureContext) {
+    document.querySelectorAll('.copy-email').forEach(function (btn) {
+      var status = btn.querySelector('.copy-status');
+      var timer = null;
+      btn.hidden = false;
+      btn.addEventListener('click', function () {
+        navigator.clipboard.writeText(btn.dataset.copy).then(function () {
+          btn.classList.add('copied');
+          status.textContent = 'Email address copied';
+          clearTimeout(timer);
+          timer = setTimeout(function () {
+            btn.classList.remove('copied');
+            status.textContent = '';
+          }, 1600);
+        });
+      });
+    });
+  }
+
+  /* ---------------------------------------------------------------------
+     Border beam
+
+     Fills each .beam ring with the segments that make up the light: 22 of
+     them, 5px apart, fading to nothing along the tail. See the note on
+     .beam in style.css for why it is a train and not one gradient.
+     --------------------------------------------------------------------- */
+  if (!reduce) {
+    var BEAM_N = 22, BEAM_STEP = 5;
+    document.querySelectorAll('.beam').forEach(function (beam) {
+      for (var i = 0; i < BEAM_N; i++) {
+        var seg = document.createElement('i');
+        seg.style.setProperty('--lag', (i * BEAM_STEP) + 'px');
+        seg.style.opacity = Math.pow(1 - i / BEAM_N, 1.6).toFixed(3);
+        beam.appendChild(seg);
+      }
+    });
+  }
+
   // Removes the curtain from the layout once every intro animation has settled.
   if (document.documentElement.dataset.loading === 'true') {
     setTimeout(function () {
