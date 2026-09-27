@@ -2091,3 +2091,10 @@ so the lit part appeared to stop.
 beam, and this worktree's rewritten `.claude/BRIEF.md`. Pushed to
 `origin/M4ttyP11/copy-and-polish` and fast forwarded onto `origin/main`, so
 GitHub Pages will rebuild. Local `main` in the parent checkout needs a pull.
+
+## 2026-09-27, hero lede second sentence reworded
+
+`index.html` hero lede: "CFD and FEA work, experimental flow measurement, and
+simulation tools I've built." became "Worked on CFD, FEA, experimental flow
+measurement and building my own simulation tools." Matty found the old one
+read oddly. Meta descriptions left as they were. Not committed.
