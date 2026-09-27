@@ -1987,3 +1987,107 @@ in `analytics.js`. Not committed yet, so nothing live.
 `eb6fd97`, pushed to `origin/M4ttyP11/cookieless-analytics` and fast forwarded
 onto `origin/main`. Pages build succeeded; live `analytics.js` carries the ID
 and the home page loads it. Local `main` in the parent checkout needs a pull.
+
+## 2026-09-27, copy-and-polish worktree created
+
+New worktree at `C:/Users/Matty/orca/workspaces/M4ttyP11.github.io/
+copy-and-polish`, branch `M4ttyP11/copy-and-polish`, based on `origin/main` at
+`2c502b1`. Created through the Orca CLI, no parent lineage.
+
+`.claude/BRIEF.md` rewritten: line by line copy and presentation tidying,
+rewording, reordering, cutting. Explicitly scoped against
+`M4ttyP11/professional-makeover`, which owns decisions about direction, while
+this worktree owns the small fixes that hold whichever direction is chosen.
+
+Found on a first pass over `index.html`, verified this session:
+
+- The footer says "No cookies. Anonymous visit counts only." and no analytics
+  script exists anywhere in the repo. The line is currently untrue.
+- No `<nav>` and no skip link on the home page. The nav removal was deliberate,
+  but the circuit widget comment still claims "The real navigation is the nav
+  above", and the widget is `aria-hidden`, so the only jump links are hidden
+  from assistive tech and gone without JS.
+- "on track for a first" in the lede is repeated by the "1st" stat below it.
+- The "6" stat label reads as a fragment because "6-person" is split across the
+  number and its label.
+- "The three projects I'm proudest of" is immediately followed by "Three
+  placements, three industries".
+- Eyebrows repeat their headings in at least two of three sections.
+
+Open: the six project pages and `projects/index.html` have not been read. No
+edits made yet, copy changes go to Matty as a diff before any spacing work.
+
+## 2026-09-27, contact section trimmed
+
+- `index.html`: removed the contact `h2` ("Looking for graduate roles in
+  motorsport aerodynamics") and the "Graduating June 2027" subline. Matty felt
+  the heading narrowed his options. The section is now the Contact eyebrow plus
+  the three buttons.
+- `style.css`: dropped the now unused `.contact h2` and `.contact .section-sub`
+  rules.
+- Status: not committed.
+
+## 2026-09-27, contact section tightened
+
+- `style.css`: `#contact` padding cut from the section default
+  (`clamp(5rem, 12vh, 8rem)`) to `clamp(2.75rem, 7vh, 4rem)`, eyebrow bottom
+  margin 0, button row `margin-top: 1rem`. Section height 340px to 217px at
+  1427x877.
+- Circuit: no code change needed. `measure()` in `site.js` places markers from
+  measured section tops and maps scroll to lap distance one for one, so speed
+  stays constant. Contact starts below the last scrollable pixel either way, so
+  its marker is spread between the last anchored corner and `CAP`, as before.
+- `orca screenshot` failed with runtime_unavailable, so checked by measurement
+  only. Not committed.
+
+## 2026-09-27, copy-email button and blur on reveal
+
+Matty picked two of the shadcnspace-style suggestions (skipped: animated card
+border, tool marquee, shimmer text, count-up stats).
+
+- Copy email: `index.html` wraps the contact email button in `.copy-group`
+  with a square `.copy-email` icon button beside it. Ships `hidden`;
+  `site.js` shows it only where `navigator.clipboard` and a secure context
+  exist. Click copies, copy icon swaps to an accent tick for 1.6s, a
+  `role="status"` span announces it. Styles in the CONTACT block of
+  `style.css`, with overrides that outrank the generic `.btn:hover svg` nudge.
+- Blur reveal: `.js .reveal` hidden state adds `filter: blur(6px)`, `.in`
+  sets `filter: none`, transition added, reduced motion forces `none`.
+- Verified in Orca with a stubbed `writeText` (Orca's automation cannot write
+  the real clipboard: "Document is not focused"). Not committed.
+
+## 2026-09-27, border beam on the lead project card
+
+- `index.html`: the GDP card (first in `.major-grid`) gets `paper-lead-card`
+  and a `<span class="beam" aria-hidden="true">` as its first child. `.paper`
+  already uses both pseudo-elements (hover spine, pointer light), hence a span.
+- `style.css`, after `.paper + .paper`: the span is a 1.5px ring cut out with
+  an exclude mask; its `::before` is a 110px accent gradient sent round
+  `offset-path: rect(... round var(--radius))` over 12s, so the speed is
+  constant, unlike a rotating conic gradient. Behind
+  `@supports (offset-path: rect(...))`; hidden under reduced motion. Ring sits
+  just inside the border because `.paper` clips at its padding edge.
+- Verified by seeking the animation (distance linear, 25% per 3s). Orca's tab
+  was not painting frames, so the motion was not watched live. Matty: easy to
+  remove, delete the span and the block. Not committed.
+
+## 2026-09-27, border beam no longer stalls at corners
+
+Matty saw the beam freeze at each corner and restart. Cause: the light was one
+110px gradient bar on the offset-path with `offset-rotate: auto`, pivoting on
+its centre; at a corner its head ran off the end of the ring while it turned,
+so the lit part appeared to stop.
+
+- Now a train of 22 small 5px segments (`.beam i`), built by `site.js` (Border
+  beam block), each on the same path with `--lag` i*5px behind the head and
+  opacity `(1 - i/22)^1.6`. Keyframes run `calc(0% - lag)` to
+  `calc(100% - lag)`; a closed rect() path wraps negative distances, checked
+  by seeking: the tail follows the ring round the corner. No JS, no beam.
+- Not watched live (Orca tab not painting). Not committed.
+
+## 2026-09-27, committed and merged to main
+
+`3bf786d`: contact trim and padding, copy-email button, blur reveal, border
+beam, and this worktree's rewritten `.claude/BRIEF.md`. Pushed to
+`origin/M4ttyP11/copy-and-polish` and fast forwarded onto `origin/main`, so
+GitHub Pages will rebuild. Local `main` in the parent checkout needs a pull.
