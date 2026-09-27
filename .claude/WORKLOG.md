@@ -1981,3 +1981,9 @@ Open: Matty creates the Umami account and pastes the website ID into
 
 Matty created the Umami account. ID `553b23f4-df84-4227-8242-0dfa8c991e93` set
 in `analytics.js`. Not committed yet, so nothing live.
+
+## 2026-09-27, analytics committed and live
+
+`eb6fd97`, pushed to `origin/M4ttyP11/cookieless-analytics` and fast forwarded
+onto `origin/main`. Pages build succeeded; live `analytics.js` carries the ID
+and the home page loads it. Local `main` in the parent checkout needs a pull.
