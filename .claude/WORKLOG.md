@@ -1932,3 +1932,52 @@ Still open from the original brief: the professional-makeover scope itself
 (visual restraint, content credibility, mechanics) has never been chosen, and
 the next motion piece discussed but not built is staggered scroll reveals
 plus a cross-fade between pages.
+
+## 2026-09-27, cookieless-analytics worktree created
+
+New worktree at `C:/Users/Matty/orca/workspaces/M4ttyP11.github.io/
+cookieless-analytics`, branch `M4ttyP11/cookieless-analytics`, based on
+`origin/main` at `f19ba15`. Created through the Orca CLI, no parent lineage.
+
+`.claude/BRIEF.md` rewritten for this worktree: pick and wire up a cookieless
+analytics tool for `mathiaspotter.co.uk`, no consent banner, no ad network.
+
+Verified this session: the repo currently has no analytics of any kind, and no
+privacy page. Constraint is GitHub Pages with no build step, so the answer is
+a hosted endpoint plus a script tag, and the tag has to be pasted into nine
+pages unless a shared head include is introduced first.
+
+Open: which tool. The brief shortlists GoatCounter, Cloudflare Web Analytics,
+Umami Cloud and the paid tier of Plausible/Fathom/Simple Analytics, but marks
+every claim about their pricing and cookie behaviour as unverified memory.
+Checking those docs is milestone 1 and nothing should be installed before it.
+
+## 2026-09-27, Umami chosen and wired up (uncommitted)
+
+Picked Umami Cloud. Checked this session: Hobby tier is free, 100k events a
+month, 3 sites, 6 months retention; docs say no cookies; custom events carry
+data properties. Read `cloud.umami.is/script.js` itself: no `document.cookie`,
+the only storage touch is a read of `localStorage['umami.disabled']`, sends
+with `fetch` keepalive. GoatCounter was the other option but its events carry
+no properties, so per-section time was not possible there. Given up: Plausible's
+nicer dashboard and built-in scroll depth, which cost money.
+
+New `analytics.js`, loaded on all 8 HTML pages after `site.js`. It injects the
+Umami tag (website ID in one constant, empty means the file does nothing,
+`data-domains` limits sending to mathiaspotter.co.uk). Adds a "Time in section"
+event per section per visit (home page split by section id, other pages one
+block), counted once a second on whichever section crosses the viewport middle,
+paused when hidden or 90s idle, flushed on hide/pagehide. Delegated click
+events: "CV download", "Email click", "Outbound" with host. Footer line on
+every page: "No cookies. Anonymous visit counts only."
+
+Verified with a stubbed `umami.track` on a local no-store server: section
+seconds attribute correctly, CV and LinkedIn clicks fire, no cookie set.
+
+Open: Matty creates the Umami account and pastes the website ID into
+`analytics.js`. Not committed.
+
+## 2026-09-27, Umami website ID added
+
+Matty created the Umami account. ID `553b23f4-df84-4227-8242-0dfa8c991e93` set
+in `analytics.js`. Not committed yet, so nothing live.
