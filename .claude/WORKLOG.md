@@ -2098,3 +2098,8 @@ GitHub Pages will rebuild. Local `main` in the parent checkout needs a pull.
 simulation tools I've built." became "Worked on CFD, FEA, experimental flow
 measurement and building my own simulation tools." Matty found the old one
 read oddly. Meta descriptions left as they were. Not committed.
+
+## 2026-09-27, hero lede merged to main
+
+`a1fc5ba`, pushed to `origin/M4ttyP11/copy-and-polish` and fast forwarded onto
+`origin/main`. Local `main` in the parent checkout needs a pull.
